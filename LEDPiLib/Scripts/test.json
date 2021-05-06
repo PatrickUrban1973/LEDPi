@@ -1,0 +1,15 @@
+{
+  "ModuleConfigurations": [
+    
+    {
+      "Module": 14,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": null,
+      "SubConfigurations": null
+    }
+
+  ],
+  "Loop": false
+}

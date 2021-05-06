@@ -1,0 +1,97 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Right Arrow Icon  ############################################################################################ -->
+    <Path x:Key="RightArrowIconPath"
+          x:Shared="False"
+          Fill="Black"
+          Stretch="Uniform"
+          Data="F1 M 26.8469,10.7846L 12.8223,0L 12.8223,6.8204L 0,6.8204L 0,14.7495L 12.8223,14.7495L 12.8223,21.5697L 26.8469,10.7846 Z " />
+
+    <ControlTemplate x:Key="RightArrowIconTemplate">
+        <Viewbox Child="{StaticResource RightArrowIconPath}" />
+    </ControlTemplate>
+
+    <Path x:Key="RightIconPath"
+          x:Shared="False"
+          Fill="{DynamicResource TextBrush}"
+          Stretch="Fill"
+          Data=" M 9 15 L 9 3 L 15 9 Z" />
+    <ControlTemplate x:Key="RightIconTemplate">
+        <Viewbox Child="{StaticResource RightIconPath}" />
+    </ControlTemplate>
+
+    <!-- Left Arrow Icon  ############################################################################################ -->
+    <Path x:Key="LeftArrowIconPath"
+          x:Shared="False"
+          Fill="Black"
+          RenderTransformOrigin="0.5,0.5"
+          Stretch="Uniform"
+          Data="F1 M 26.8469,10.7846L 12.8223,0L 12.8223,6.8204L 0,6.8204L 0,14.7495L 12.8223,14.7495L 12.8223,21.5697L 26.8469,10.7846 Z ">
+        <Path.RenderTransform>
+            <ScaleTransform ScaleX="-1" />
+        </Path.RenderTransform>
+    </Path>
+
+    <ControlTemplate x:Key="LeftArrowIconTemplate">
+        <Viewbox Child="{StaticResource LeftArrowIconPath}" />
+    </ControlTemplate>
+
+    <Path x:Key="LeftIconPath"
+          x:Shared="False"
+          Fill="{DynamicResource TextBrush}"
+          Stretch="Fill"
+          Data=" M 8 15 L 8 3 L 2 9 Z" />
+    <ControlTemplate x:Key="LeftIconTemplate">
+        <Viewbox Child="{StaticResource LeftIconPath}" />
+    </ControlTemplate>
+
+    <!-- Up Arrow Icon  ############################################################################################ -->
+    <Path x:Key="UpArrowIconPath"
+          x:Shared="False"
+          Fill="Black"
+          RenderTransformOrigin="0.5,0.5"
+          Stretch="Uniform"
+          Data="F1 M 26.8469,10.7846L 12.8223,0L 12.8223,6.8204L 0,6.8204L 0,14.7495L 12.8223,14.7495L 12.8223,21.5697L 26.8469,10.7846 Z ">
+        <Path.RenderTransform>
+            <RotateTransform Angle="270"/>
+        </Path.RenderTransform>
+    </Path>
+
+    <ControlTemplate x:Key="UpArrowIconTemplate">
+        <Viewbox Child="{StaticResource UpArrowIconPath}" />
+    </ControlTemplate>
+
+    <!-- Down Arrow Icon  ############################################################################################ -->
+    <Path x:Key="DownArrowIconPath"
+          x:Shared="False"
+          Fill="Black"
+          RenderTransformOrigin="0.5,0.5"
+          Stretch="Uniform"
+          Data="F1 M 26.8469,10.7846L 12.8223,0L 12.8223,6.8204L 0,6.8204L 0,14.7495L 12.8223,14.7495L 12.8223,21.5697L 26.8469,10.7846 Z ">
+        <Path.RenderTransform>
+            <RotateTransform Angle="90"/>
+        </Path.RenderTransform>
+    </Path>
+
+    <ControlTemplate x:Key="DownArrowIconTemplate">
+        <Viewbox Child="{StaticResource DownArrowIconPath}" />
+    </ControlTemplate>
+
+    <!-- Cross Icon  ################################################################################################ -->
+    <Path x:Key="CrossIconPath"
+          x:Shared="False"
+          Stretch="Uniform"
+          Fill="Black"
+          Data="F1 M 4.70432,0L 0.0480347,4.77802L 7.00842,11.6812L 0,18.7292L 4.70432,23.46L 11.6647,16.412L 18.6252,23.46L 23.3774,18.7774L 16.369,11.6812L 23.3294,4.77802L 18.6252,0L 11.6647,6.9986L 4.70432,0 Z" />
+
+    <Path x:Key="RedCrossIconPath"
+          x:Shared="False"
+          Stretch="Uniform"
+          Data="{Binding Source={StaticResource CrossIconPath}, Path=Data}"
+          Fill="{DynamicResource ErrorBrush}" />
+
+    <ControlTemplate x:Key="CrossIconTemplate">
+        <Viewbox Child="{StaticResource CrossIconPath}" />
+    </ControlTemplate>
+</ResourceDictionary>

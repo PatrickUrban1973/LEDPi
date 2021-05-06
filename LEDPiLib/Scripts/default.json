@@ -1,0 +1,197 @@
+{
+  "ModuleConfigurations": [
+    {
+      "Module": 0,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 10,
+      "CronTime": null
+    },
+    {
+      "Module": 2,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": null
+    },
+    {
+      "Module": -1,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": "15 * * * *",
+      "SubConfigurations": [
+        {
+          "Module": 1,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 3,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 11,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 12,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 14,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
+        }
+      ]
+    },
+    {
+      "Module": -1,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": "30 * * * *",
+      "SubConfigurations": [
+        {
+          "Module": 5,
+          "Parameter": "/home/pi/LEDPi/Processor/Pics/1/",
+          "OneTime": true,
+          "Duration": 0,
+          "CronTime": null
+        },
+        {
+          "Module": 5,
+          "Parameter": "/home/pi/LEDPi/Processor/Pics/2/",
+          "OneTime": true,
+          "Duration": 0,
+          "CronTime": null
+        },
+        {
+          "Module": 5,
+          "Parameter": "/home/pi/LEDPi/Processor/Pics/3/",
+          "OneTime": true,
+          "Duration": 0,
+          "CronTime": null
+        }
+      ]
+    },
+    {
+      "Module": -1,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 30,
+      "CronTime": "45 * * * *",
+      "SubConfigurations": [
+        {
+          "Module": 7,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 10,
+          "Parameter": "0,1,2,8",
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 13,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 9,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+      ]
+    },
+    {
+      "Module": -1,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 30,
+      "CronTime": "00 * * * *",
+      "SubConfigurations": [
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/alone.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/cat.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/elefant.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/pferd.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/roboter.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/run.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/sleepingcat.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        },
+        {
+          "Module": 8,
+          "Parameter": "/home/pi/LEDPi/Processor/Gif/wal.gif",
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null
+        }
+      ]
+    }
+  ],
+  "Loop": false
+}

@@ -1,0 +1,39 @@
+{
+  "ModuleConfigurations": [
+    {
+      "Module": -2,
+      "Parameter": null,
+      "OneTime": true,
+      "Duration": 0,
+      "CronTime": null,
+      "SubConfigurations": [
+        {
+          "Module": 15,
+          "Parameter": 30,
+          "OneTime": true,
+          "Duration": 0,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+        {
+          "Module": 13,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 450,
+          "CronTime": null,
+          "SubConfigurations": [
+            {
+              "Module": 4,
+              "Parameter": "Happy new year!!!",
+              "OneTime": false,
+              "Duration": 0,
+              "CronTime": null,
+              "SubConfigurations": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Loop": false
+}

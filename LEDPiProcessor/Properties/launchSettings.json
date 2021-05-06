@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LEDPiProcessor": {
+      "commandName": "Project",
+      "commandLineArgs": "--parameter {\\\"ModuleConfigurations\\\":[{\\\"Module\\\":3,\\\"Parameter\\\":\\\"\\\",\\\"OneTime\\\":false,\\\"Duration\\\":0}],\\\"Loop\\\":true}"
+    }
+  }
+}
