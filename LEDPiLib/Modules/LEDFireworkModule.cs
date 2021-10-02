@@ -18,15 +18,12 @@ namespace LEDPiLib.Modules
         List<Firework> fireworks = new List<Firework>();
         private Random random = new Random();
         private Vector2D gravity = new Vector2D(0, 0.4f);
-        private float renderOffset = 2f;
 
         private Image<Rgba32> image;
 
-        public LEDFireworkModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDFireworkModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f, 30)
         {
             Firework.Gravity = gravity;
-            renderWidth = Convert.ToInt32(LEDWidth * renderOffset);
-            renderHeight = Convert.ToInt32(LEDHeight * renderOffset);
         }
 
         protected override bool completedRun()
@@ -34,7 +31,7 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             image = new Image<Rgba32>(renderWidth, renderHeight);
             SetBackgroundColor(image);
@@ -55,7 +52,6 @@ namespace LEDPiLib.Modules
                 }
             }
 
-            image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
             return image;
         }
     }

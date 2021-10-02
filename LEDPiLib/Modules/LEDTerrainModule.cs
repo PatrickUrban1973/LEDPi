@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -22,16 +23,23 @@ namespace LEDPiLib.Modules
         Mat4x4 matWorld;
         Mat4x4 matView;
 
-        private int scaleGrid = 9;
-
+        private int scaleGrid = 20;
+        private float fAspectRatio = 1.75f;
+        
         private float offsetY = 0;
+        private float perlinZ;
         private Perlin perlin;
 
-        public LEDTerrainModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2.5f)
+        public LEDTerrainModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2.5f, 30)
         {
+            if (!string.IsNullOrEmpty(moduleConfiguration.Parameter))
+                fAspectRatio = float.Parse(moduleConfiguration.Parameter, CultureInfo.InvariantCulture.NumberFormat);
+                
             perlin = new Perlin(-1);
-            matProj = Mat4x4.MakeProjection(45.0f, 1.5f, 0.1f, 1000.0f);
+            matProj = Mat4x4.MakeProjection(45.0f, fAspectRatio, 0.1f, 1000.0f);
 
+            perlinZ = 1f + Convert.ToSingle(new Random().NextDouble());
+            
             // Set up "World Tranmsform" though not updating theta 
             // makes this a bit redundant
             Mat4x4 matRotZ, matRotX;
@@ -56,6 +64,36 @@ namespace LEDPiLib.Modules
            matView = matCamera.QuickInverse();
         }
 
+        private Color getColor(List<Vector3D> vectors)
+        {
+            float z = vectors.Max(c => c.vector.Z);
+            Color color = Color.White;
+
+            if (z > 0.7f)
+                color = Color.DarkGray;
+            else if (z > 0.5f)
+                color = Color.Gray;
+
+            //Debug.Print(z.ToString());
+
+            return color;
+        }
+
+        private void createTriangle(List<Triangle> triangles, int x, int y)
+        {
+            List<Vector3D> vectors = new List<Vector3D>();
+            vectors.Add(new Vector3D(MathHelper.Map(x, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y + 1, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x, 0, scaleGrid - 1, -.25f, 1), y + 1 + offsetY, perlinZ)));
+            vectors.Add(new Vector3D(MathHelper.Map(x + 1, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x + 1, 0, scaleGrid - 1, -.25f, 1), y + offsetY, perlinZ)));  //3
+            vectors.Add(new Vector3D(MathHelper.Map(x, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x, 0, scaleGrid - 1, -.25f, 1), y + offsetY, perlinZ)));         //2
+            triangles.Add(new Triangle(vectors) { color = getColor(vectors) });
+
+            vectors = new List<Vector3D>();
+            vectors.Add(new Vector3D(MathHelper.Map(x, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y + 1, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x, 0, scaleGrid - 1, -.25f, 1), y + 1 + offsetY, perlinZ)));
+            vectors.Add(new Vector3D(MathHelper.Map(x + 1, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y + 1, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x + 1, 0, scaleGrid - 1, -.25f, 1), y + 1 + offsetY, perlinZ)));  //3
+            vectors.Add(new Vector3D(MathHelper.Map(x + 1, 0, scaleGrid - 1, 0, 1), MathHelper.Map(y, 0, scaleGrid - 1, 0, 1), perlin.perlin(MathHelper.Map(x + 1, 0, scaleGrid - 1, -.25f, 1), y + offsetY, perlinZ)));         //2
+            triangles.Add(new Triangle(vectors) { color = getColor(vectors) });
+        }
+
         protected override bool completedRun()
         {
             return false;
@@ -65,32 +103,11 @@ namespace LEDPiLib.Modules
         {
             List<Triangle> triangles = new List<Triangle>();
 
-            for (int y = 0; y < scaleGrid - 1; y++)
+            for (int y = scaleGrid - 1; y >= 0 ; y--)
             {
-                for (int x = 0; x < scaleGrid - 1; x++)
+                for (int x = scaleGrid - 1; x >= 0 ; x--)
                 {
-                    triangles.Add(new Triangle(new List<Vector3D>()
-                    {
-                        new Vector3D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y + 1, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), y + 1 + offsetY)),  //1
-                        new Vector3D(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), y + offsetY)),  //3
-                        new Vector3D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1),  y + offsetY)),         //2
-                    },
-                        new List<Vector2D>()
-                        {
-                            new Vector2D(0.0f, LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), 1.0f), new Vector2D(0.0f, 0.0f, 1.0f), new Vector2D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), 0.0f, 1.0f) ,
-                        }
-                    ));
-                    triangles.Add(new Triangle(new List<Vector3D>()
-                        {
-                            new Vector3D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y + 1, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), y + 1 + offsetY)),
-                            new Vector3D(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y + 1, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), y + 1 + offsetY)),
-                            new Vector3D(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), perlin.perlin(LEDEngine3D.Map(x + 1, 0, scaleGrid -1, 0, 1), y + offsetY)),
-                        },
-                        new List<Vector2D>()
-                        {
-                            new Vector2D(0.0f, LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), 1.0f), new Vector2D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), 0.0f, 1.0f), new Vector2D(LEDEngine3D.Map(x, 0, scaleGrid -1, 0, 1), LEDEngine3D.Map(y, 0, scaleGrid -1, 0, 1), 1.0f)  ,
-                        }
-                    ));
+                   createTriangle(triangles, x, y);
                 }
             }
 
@@ -98,7 +115,7 @@ namespace LEDPiLib.Modules
             offsetY += 1f;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             image = new Image<Rgba32>(renderWidth, renderHeight);
             engine3D.Canvas = image;
@@ -106,9 +123,8 @@ namespace LEDPiLib.Modules
             updateTriangles();
 
             // Store triagles for rastering later
-            drawTriangles(meshCube, matWorld, matView, matProj, vCamera, light_direction, true);
+            drawTriangles(meshCube, matWorld, matView, matProj, vCamera, light_direction, true, false);
 
-            image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
             return image;
         }
     }

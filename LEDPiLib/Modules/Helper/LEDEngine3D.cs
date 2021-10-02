@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using LEDPiLib.Modules.Model;
 using SixLabors.ImageSharp;
@@ -33,7 +34,7 @@ namespace LEDPiLib.Modules.Helper
         {
             Color retColor = Color.Black;
 
-            int pixel_bw = (int)(13.0f * lum);
+            int pixel_bw = (int)MathHelper.Map(lum, 0, 1, 0, 13);
             switch (pixel_bw)
             {
                 case 0: retColor = Color.Black; 
@@ -94,15 +95,11 @@ namespace LEDPiLib.Modules.Helper
 
             int nInsidePointCount = 0;
             int nOutsidePointCount = 0;
-            int nInsideTexCount = 0;
-            int nOutsideTexCount = 0;
 
             // Create two temporary storage arrays to classify points either side of plane
             // If distance sign is positive, point lies on "inside" of plane
             Vector3D[] inside_points = new Vector3D[3];
             Vector3D[] outside_points = new Vector3D[3];
-			Vector2D[] inside_tex = new Vector2D[3];
-            Vector2D[] outside_tex = new Vector2D[3]; 
 
 
 			// Get signed distance of each point in triangle to plane
@@ -110,26 +107,26 @@ namespace LEDPiLib.Modules.Helper
 			float d1 = dist(plane_n, plane_p, in_tri.P[1]);
 			float d2 = dist(plane_n, plane_p, in_tri.P[2]);
 
-			if (d0 >= 0) { inside_points[nInsidePointCount++] = in_tri.P[0]; inside_tex[nInsideTexCount++] = in_tri.T[0]; }
+			if (d0 >= 0) { inside_points[nInsidePointCount++] = in_tri.P[0]; }
 			else
 			{
-				outside_points[nOutsidePointCount++] = in_tri.P[0]; outside_tex[nOutsideTexCount++] = in_tri.T[0];
+				outside_points[nOutsidePointCount++] = in_tri.P[0]; 
 			}
 			if (d1 >= 0)
 			{
-				inside_points[nInsidePointCount++] = in_tri.P[1]; inside_tex[nInsideTexCount++] = in_tri.T[1];
+				inside_points[nInsidePointCount++] = in_tri.P[1]; 
 			}
 			else
 			{
-				outside_points[nOutsidePointCount++] = in_tri.P[1]; outside_tex[nOutsideTexCount++] = in_tri.T[1];
+				outside_points[nOutsidePointCount++] = in_tri.P[1]; 
 			}
 			if (d2 >= 0)
 			{
-				inside_points[nInsidePointCount++] = in_tri.P[2]; inside_tex[nInsideTexCount++] = in_tri.T[2];
+				inside_points[nInsidePointCount++] = in_tri.P[2]; 
 			}
 			else
 			{
-				outside_points[nOutsidePointCount++] = in_tri.P[2]; outside_tex[nOutsideTexCount++] = in_tri.T[2];
+				outside_points[nOutsidePointCount++] = in_tri.P[2]; 
 			}
 
 			// Now classify triangle points, and break the input triangle into 
@@ -154,7 +151,7 @@ namespace LEDPiLib.Modules.Helper
 
 			if (nInsidePointCount == 1 && nOutsidePointCount == 2)
             {
-                Triangle out_tri1 = new Triangle(new List<Vector3D>(), new List<Vector2D>());
+                Triangle out_tri1 = new Triangle(new List<Vector3D>());
 				clipped.Add(out_tri1);
 
 				// Triangle should be clipped. As two points lie outside
@@ -165,28 +162,20 @@ namespace LEDPiLib.Modules.Helper
 
 				// The inside point is valid, so keep that...
 				out_tri1.P.Add(inside_points[0]);
-				out_tri1.T.Add(inside_tex[0]);
 
 				// but the two new points are at the locations where the 
 				// original sides of the triangle (lines) intersect with the plane
 				float t = 0;
 				out_tri1.P.Add(Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0], ref t));
-                out_tri1.T.Add(new Vector2D(t * (outside_tex[0].X - inside_tex[0].X) + inside_tex[0].X,
-                    t * (outside_tex[0].Y - inside_tex[0].Y) + inside_tex[0].Y,
-                    t * (outside_tex[0].W - inside_tex[0].W) + inside_tex[0].W));
-
-				out_tri1.P.Add(Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1], ref t));
-                out_tri1.T.Add(new Vector2D(t * (outside_tex[1].X - inside_tex[0].X) + inside_tex[0].X,
-                    t * (outside_tex[1].Y - inside_tex[0].Y) + inside_tex[0].Y,
-                    t * (outside_tex[1].W - inside_tex[0].W) + inside_tex[0].W));
+                out_tri1.P.Add(Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1], ref t));
 
 				return 1; // Return the newly formed single triangle
 			}
 
 			if (nInsidePointCount == 2 && nOutsidePointCount == 1)
 			{
-                Triangle out_tri1 = new Triangle(new List<Vector3D>(), new List<Vector2D>());
-                Triangle out_tri2 = new Triangle(new List<Vector3D>(), new List<Vector2D>());
+                Triangle out_tri1 = new Triangle(new List<Vector3D>()) { color = in_tri.color };
+                Triangle out_tri2 = new Triangle(new List<Vector3D>()) { color = in_tri.color };
                 clipped.Add(out_tri1);
                 clipped.Add(out_tri2);
 
@@ -203,41 +192,56 @@ namespace LEDPiLib.Modules.Helper
 				// intersects with the plane
 				out_tri1.P.Add(inside_points[0]);
 				out_tri1.P.Add(inside_points[1]);
-				out_tri1.T.Add(inside_tex[0]);
-				out_tri1.T.Add(inside_tex[1]);
 
 				float t = 0;
 				out_tri1.P.Add(Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0], ref t));
-                out_tri1.T.Add(new Vector2D(t * (outside_tex[0].X - inside_tex[0].X) + inside_tex[0].X,
-                    t * (outside_tex[0].Y - inside_tex[0].Y) + inside_tex[0].Y,
-                    t * (outside_tex[0].W - inside_tex[0].W) + inside_tex[0].W));
 
 				// The second triangle is composed of one of he inside points, a
 				// new point determined by the intersection of the other side of the 
 				// triangle and the plane, and the newly created point above
 				out_tri2.P.Add(inside_points[1]);
-				out_tri2.T.Add(inside_tex[1]);
 				out_tri2.P.Add(out_tri1.P[2]);
-				out_tri2.T.Add(out_tri1.T[2]);
 				out_tri2.P.Add(Vector_IntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0], ref t));
-                out_tri2.T.Add(new Vector2D(t * (outside_tex[0].X - inside_tex[1].X) + inside_tex[1].X,
-                    t * (outside_tex[0].Y - inside_tex[1].Y) + inside_tex[1].Y,
-                    t * (outside_tex[0].W - inside_tex[1].W) + inside_tex[1].W));
-				return 2; // Return two newly formed triangles which form a quad
+
+                return 2; // Return two newly formed triangles which form a quad
 			}
 
             return -1;
         }
 
-        public void DrawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, Color col)
+        public void DrawLine(Vector2D a, Vector2D b, Color col)
         {
-            drawLine(x1, y1, x2, y2, col);
-            drawLine(x2, y2, x3, y3, col);
-            drawLine(x3, y3, x1, y1, col);
+            Draw(GetLineVectors(a.vector.X, a.vector.Y, b.vector.X, b.vector.Y), col);
         }
 
-        protected void drawLine(float x1, float y1, float x2, float y2, Color col)
+        public void DrawFilledRectangle(Model.Rectangle rectangle)
         {
+            List<Vector2> vectors = new List<Vector2>();
+            int startX = Convert.ToInt32(rectangle.Pos.vector.X);
+            int endX = Convert.ToInt32(rectangle.Pos.vector.X + rectangle.Size.vector.X);
+            int startY = Convert.ToInt32(rectangle.Pos.vector.Y);
+            int endY = Convert.ToInt32(rectangle.Pos.vector.Y + rectangle.Size.vector.Y);
+
+            for(int x = startX; x <= endX; x++)
+            {
+                for (int y = startY; y <= endY; y++)
+                {
+                    vectors.Add(new Vector2(x, y));
+                }
+            }
+
+            Draw(vectors, rectangle.color);
+        }
+
+        public void DrawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, Color col)
+        {
+//            Canvas.Mutate(c => c.DrawLines(col, 1f, new PointF[]{new PointF(x1, y1), new PointF(x2, y2), new PointF(x3, y3), }));
+            Draw(GetLineVectors(x1, y1, x2, y2).Concat(GetLineVectors(x2, y2, x3, y3)).Concat(GetLineVectors(x3, y3, x1, y1)), col);
+        }
+
+        public List<Vector2> GetLineVectors(float x1, float y1, float x2, float y2)
+        {
+            List<Vector2> vectors = new List<Vector2>();
             float x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
             dx = x2 - x1;
             dy = y2 - y1;
@@ -259,7 +263,7 @@ namespace LEDPiLib.Modules.Helper
                     y = y2;
                     xe = x1;
                 }
-                Draw(x, y, col);
+                vectors.Add(new Vector2(x,y));
                 for (i = 0; x < xe; i++)
                 {
                     x = x + 1;
@@ -273,7 +277,7 @@ namespace LEDPiLib.Modules.Helper
                             y = y - 1;
                         px = px + 2 * (dy1 - dx1);
                     }
-                    Draw(x, y, col);
+                    vectors.Add(new Vector2(x, y));
                 }
             }
             else
@@ -290,7 +294,7 @@ namespace LEDPiLib.Modules.Helper
                     y = y2;
                     ye = y1;
                 }
-                Draw(x, y, col);
+                vectors.Add(new Vector2(x, y));
                 for (i = 0; y < ye; i++)
                 {
                     y = y + 1;
@@ -304,9 +308,11 @@ namespace LEDPiLib.Modules.Helper
                             x = x - 1;
                         py = py + 2 * (dx1 - dy1);
                     }
-                    Draw(x, y, col);
+                    vectors.Add(new Vector2(x, y));
                 }
             }
+
+            return vectors;
         }
 
         public void FillTriangle(float fx1, float fy1, float fx2, float fy2, float fx3, float fy3, Color col)
@@ -323,10 +329,25 @@ namespace LEDPiLib.Modules.Helper
                 int t = tempX; tempX = tempY; tempY = t;
             }
 
-            void Drawline(int sx, int ex, int ny)
+            void Drawline(int sx, int ex, int ny, Color color)
             {
-                for (int i = sx; i <= ex; i++)
-                    Draw(i, ny, col);
+                int realsx = sx;
+                int realex = ex;
+
+                if (ny < 0 || ny > Canvas.Height)
+                    return;
+
+                if (realsx > Canvas.Width)
+                    return;
+
+                if (realsx < 0)
+                    realsx = 0;
+
+                if (realex > Canvas.Width)
+                    realex = Canvas.Width;
+
+                for (int i = realsx; i <= realex; i++)
+                    Draw(i, ny, color);
             }
 
             int t1x, t2x, y, minx, maxx, t1xp, t2xp;
@@ -409,7 +430,7 @@ namespace LEDPiLib.Modules.Helper
             next2:
                 if (minx > t1x) minx = t1x; if (minx > t2x) minx = t2x;
                 if (maxx < t1x) maxx = t1x; if (maxx < t2x) maxx = t2x;
-                Drawline(minx, maxx, y);    // Draw line from min to max points found on the y
+                Drawline(minx, maxx, y, col);    // Draw line from min to max points found on the y
                                             // Now increase y
                 if (!changed1) t1x += signx1;
                 t1x += t1xp;
@@ -475,7 +496,7 @@ namespace LEDPiLib.Modules.Helper
 
                 if (minx > t1x) minx = t1x; if (minx > t2x) minx = t2x;
                 if (maxx < t1x) maxx = t1x; if (maxx < t2x) maxx = t2x;
-                Drawline(minx, maxx, y);
+                Drawline(minx, maxx, y, col);
                 if (!changed1) t1x += signx1;
                 t1x += t1xp;
                 if (!changed2) t2x += signx2;
@@ -485,6 +506,31 @@ namespace LEDPiLib.Modules.Helper
             }
         }
 
+        public void Draw(IEnumerable<Vector2> vectors, Color col)
+        {
+            foreach (IGrouping<float, Vector2> vector2s in vectors.GroupBy(c => c.Y))
+            {
+                int y = Convert.ToInt32(vector2s.Key);
+
+                if (y >= 0 && y < Canvas.Height)
+                {
+                    var row = Canvas.GetPixelRowSpan(y);
+
+                    foreach (Vector2 vector2 in vector2s)
+                    {
+                        int x = Convert.ToInt32(vector2.X);
+
+                       if (x >= 0 && x < Canvas.Width)
+                        {
+                            row[x] = col;
+                        }
+                    }
+                }
+            }
+        }
+
+
+
         public void Draw(float x, float y, Color col)
         {
             int intX = Convert.ToInt32(x);
@@ -492,21 +538,8 @@ namespace LEDPiLib.Modules.Helper
 
             if (intX >= 0 && intX < Canvas.Width && intY >= 0 && intY < Canvas.Height)
             {
-                Canvas.GetPixelRowSpan(intY)[intX] = col.ToPixel<Rgba32>();
+                Canvas.GetPixelRowSpan(intY)[intX] = col;
             }
         }
-
-        public static float Constrain(float constrainValue, float constrainMin, float constrainMax)
-        {
-            return constrainValue < constrainMin
-                ? constrainMin
-                : (constrainValue > constrainMax ? constrainMax : constrainValue);
-        }
-
-        public static float Map(float s, float a1, float a2, float b1, float b2)
-        {
-            return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
-        }
-
     }
 }

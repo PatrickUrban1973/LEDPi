@@ -5,7 +5,6 @@ using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -58,7 +57,7 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             Image<Rgba32> image = new Image<Rgba32>(renderHeight, renderWidth);
             SetBackgroundColor(image);
@@ -102,8 +101,8 @@ namespace LEDPiLib.Modules
                     newspot.A = a + (dA * laplaceA - a * b * b + feed * (1 - a)) * 1;
                     newspot.B = b + (dB * laplaceB + a * b * b - (k + feed) * b) * 1;
 
-                    newspot.A = LEDEngine3D.Constrain(newspot.A, 0, 1);
-                    newspot.B = LEDEngine3D.Constrain(newspot.B, 0, 1);
+                    newspot.A = MathHelper.Constrain(newspot.A, 0, 1);
+                    newspot.B = MathHelper.Constrain(newspot.B, 0, 1);
                 }
             }
 
@@ -118,7 +117,6 @@ namespace LEDPiLib.Modules
             }
 
 
-            image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
             copyGrid();
             return image;
         }

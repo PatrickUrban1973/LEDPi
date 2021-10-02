@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LEDPiLib.Modules.Helper
+﻿namespace LEDPiLib.Modules.Helper
 {
 	public class Perlin
 	{
@@ -59,7 +55,7 @@ namespace LEDPiLib.Modules.Helper
 			}
 		}
 
-		public float perlin(float x, float y, float z = 1)
+		public float perlin(float x, float y, float z = 1f)
 		{
 			if (repeat > 0)
 			{                                   // If we have any repeat on, change the coordinates to their "local" repetitions
@@ -89,23 +85,25 @@ namespace LEDPiLib.Modules.Helper
 			bbb = p[p[p[inc(xi)] + inc(yi)] + inc(zi)];
 
             float x1, x2, y1, y2;
-			x1 = lerp(grad(aaa, xf, yf, zf),                // The gradient function calculates the dot product between a pseudorandom
+			x1 = MathHelper.Lerp(grad(aaa, xf, yf, zf),                // The gradient function calculates the dot product between a pseudorandom
 						grad(baa, xf - 1, yf, zf),              // gradient vector and the vector from the input coordinate to the 8
 						u);                                     // surrounding points in its unit cube.
-			x2 = lerp(grad(aba, xf, yf - 1, zf),                // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
+			x2 = MathHelper.Lerp(grad(aba, xf, yf - 1, zf),                // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
 						grad(bba, xf - 1, yf - 1, zf),              // values we made earlier.
 						  u);
-			y1 = lerp(x1, x2, v);
+			y1 = MathHelper.Lerp(x1, x2, v);
 
-			x1 = lerp(grad(aab, xf, yf, zf - 1),
+			x1 = MathHelper.Lerp(grad(aab, xf, yf, zf - 1),
 						grad(bab, xf - 1, yf, zf - 1),
 						u);
-			x2 = lerp(grad(abb, xf, yf - 1, zf - 1),
+			x2 = MathHelper.Lerp(grad(abb, xf, yf - 1, zf - 1),
 						  grad(bbb, xf - 1, yf - 1, zf - 1),
 						  u);
-			y2 = lerp(x1, x2, v);
+			y2 = MathHelper.Lerp(x1, x2, v);
 
-			return (lerp(y1, y2, w) + 1) / 2;                       // For convenience we bound it to 0 - 1 (theoretical min/max before is -1 - 1)
+			var result = (MathHelper.Lerp(y1, y2, w) + 1) / 2;
+			
+			return result;                       // For convenience we bound it to 0 - 1 (theoretical min/max before is -1 - 1)
 		}
 
 		private int inc(int num)
@@ -140,11 +138,6 @@ namespace LEDPiLib.Modules.Helper
 			// so that they will "ease" towards integral values.  This ends up smoothing
 			// the final output.
 			return t * t * t * (t * (t * 6 - 15) + 10);         // 6t^5 - 15t^4 + 10t^3
-		}
-
-		private float lerp(float a, float b, float x)
-		{
-			return a + x * (b - a);
 		}
 	}
 }

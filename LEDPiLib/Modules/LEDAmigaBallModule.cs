@@ -10,7 +10,6 @@ using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
 {
-    [LEDModule(LEDModules.AmigaBall)]
     public class LEDAmigaBallModule : ModuleBase
     {
         public LEDAmigaBallModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
@@ -29,7 +28,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && right && x == 320f;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             Image<Rgba32> image = new Image<Rgba32>(640, 512);
             image.Mutate(c => c.BackgroundColor(Color.LightGray));
@@ -61,8 +60,8 @@ namespace LEDPiLib.Modules
 
             float y = 350.0f - 200.0f * Convert.ToSingle(Math.Abs(Math.Cos(y_ang * Math.PI / 180.0)));
             calc_and_draw(image, phase, 120.0f, x, y);
-
             image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
+
             return image;
         }
 

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using LEDPiDevKit;
@@ -113,12 +111,12 @@ namespace DevKit
                     new ModuleConfiguration()
                     {
                         Duration = 0, Module = (LEDPIProcessorBase.LEDModules) ComboBox.SelectedItem,
-                        Parameter = parameterText, OneTime = false
+                        Parameter = parameterText, OneTime = Onetime.IsChecked.Value
                     },
                 }
             };
 
-            kit.RunModule(playlist);
+            kit.RunModule(playlist, false,ShowFrameRate.IsChecked.Value);
         }
 
         private void ExportButton_OnClick(object sender, RoutedEventArgs e)

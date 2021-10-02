@@ -19,15 +19,18 @@ namespace LEDPiProcessor
                 new Option<string>(
                     "--playlist",
                     description: "a playlist in json format"),
+                new Option<bool>(
+                    "--showframerate",
+                    description: "show frame rates"),
             };
 
             rootCommand.TreatUnmatchedTokensAsErrors = false;
             rootCommand.Description = "";
-            rootCommand.Handler = CommandHandler.Create<string, string>(Execute);
+            rootCommand.Handler = CommandHandler.Create<string, string, bool>(Execute);
             rootCommand.InvokeAsync(args);
         }
 
-        static public void Execute(string playlist, string parameter)
+        public static void Execute(string playlist, string parameter, bool showframerate)
         {
             if (!string.IsNullOrEmpty(playlist))
             {
@@ -42,7 +45,7 @@ namespace LEDPiProcessor
             try
             {
                 LEDPIProcessorKit kit = new LEDPIProcessorKit();
-                kit.RunModule(mp, true);
+                kit.RunModule(mp, true, showframerate);
             }
             catch (Exception e)
             {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
 using SixLabors.Fonts;
@@ -31,7 +30,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && stopwatch.Elapsed > timeSpan;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             TimeSpan countDownSpan = timeSpan - stopwatch.Elapsed;
             string displayText;
@@ -71,7 +70,7 @@ namespace LEDPiLib.Modules
             {
                 font = new Font(fo, 35, FontStyle.Regular);
                 displayText = countDownSpan.Seconds.ToString();
-                color = color.WithAlpha(LEDEngine3D.Map(countDownSpan.Milliseconds, 1, 1000, 0f, 1f));
+                color = color.WithAlpha(MathHelper.Map(countDownSpan.Milliseconds, 1, 1000, 0f, 1f));
             }
 
             FontRectangle size = TextMeasurer.Measure(

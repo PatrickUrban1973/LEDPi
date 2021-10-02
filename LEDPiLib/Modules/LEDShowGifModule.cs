@@ -29,7 +29,7 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             if (_currentPicture == null)
             {

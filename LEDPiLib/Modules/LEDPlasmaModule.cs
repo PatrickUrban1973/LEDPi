@@ -53,12 +53,11 @@ namespace LEDPiLib.Modules
         private double t = 0;
         private PlasmaParam param;
 
-        public LEDPlasmaModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDPlasmaModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 15)
         {
             Random random = new Random();
             List<Func<double, double, double, double, double>> worklist =
                 new List<Func<double, double, double, double, double>>();
-
 
             if (!string.IsNullOrEmpty(moduleConfiguration.Parameter))
             {
@@ -101,14 +100,14 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
+            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
             SetBackgroundColor(image);
 
-            for (int y = 0; y < LEDPIProcessorBase.LEDHeight; y++)
+            for (int y = 0; y < renderHeight; y++)
             {
-                for(int x = 0; x < LEDPIProcessorBase.LEDWidth; x++)
+                for(int x = 0; x < renderWidth; x++)
                 {
                     Rgba32 pixel = image.GetPixelRowSpan(y)[x];
                     double z = wave(x, y, param);

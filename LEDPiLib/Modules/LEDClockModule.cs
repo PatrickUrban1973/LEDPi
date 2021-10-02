@@ -28,7 +28,7 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             DateTime actualTime = DateTime.Now;
             float center = size / 2.0f - _padding;

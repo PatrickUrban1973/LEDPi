@@ -1,0 +1,22 @@
+{
+  "ModuleConfigurations": [
+    {
+      "Module": 28,
+      "Parameter": "",
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": null,
+      "SubConfigurations": [
+        {
+          "Module": 4,
+          "Parameter": "Happy Birthday Simon!!!",
+          "OneTime": false,
+          "Duration": 0,
+          "CronTime": null,
+          "SubConfigurations": null
+        }
+      ]
+    }
+  ],
+  "Loop": false
+}

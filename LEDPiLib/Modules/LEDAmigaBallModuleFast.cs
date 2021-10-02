@@ -13,7 +13,7 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.AmigaBallFast)]
     public class LEDAmigaBallModuleFast : ModuleBase
     {
-        public LEDAmigaBallModuleFast(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDAmigaBallModuleFast(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1, 15)
         {
             x = LEDPIProcessorBase.LEDWidth * 0.5f;
             dx = LEDPIProcessorBase.LEDWidth * 0.003f;
@@ -49,7 +49,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && right && x == LEDPIProcessorBase.LEDWidth * 0.5f;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             Image<Rgba32> image = backGroundImage.Clone();
 

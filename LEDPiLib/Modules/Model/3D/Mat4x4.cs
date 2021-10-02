@@ -13,6 +13,36 @@ namespace LEDPiLib.Modules.Model
 		
         }
 
+        private static Mat4x4 vecToMatrix(Vector4D v)
+        {
+            Mat4x4 m = new Mat4x4();
+            m.M.M11 = v.vector.X;
+            m.M.M21 = v.vector.Y;
+            m.M.M31 = v.vector.Z;
+            m.M.M41 = v.vector.W;
+            return m;
+        }
+
+        private static Vector3D matrixToVec(Mat4x4 m)
+        {
+            return new Vector3D(m.M.M11, m.M.M21, m.M.M31);
+        }
+
+        private static Vector4D matrixToVec4(Mat4x4 m)
+        {
+            return new Vector4D(m.M.M11, m.M.M21, m.M.M31, m.M.M41);
+        }
+
+        public static Vector3D operator *(Mat4x4 m, Vector4D v1)
+        {
+            return matrixToVec(m * vecToMatrix(v1));
+        }
+
+        public static Vector4D MatMul(Mat4x4 m, Vector4D v1)
+        {
+            return matrixToVec4(m * vecToMatrix(v1));
+        }
+
         public static Vector3D operator *(Mat4x4 m, Vector3D v1)
         {
             return new Vector3D(v1.vector.X * m.M.M11 + v1.vector.Y * m.M.M21 + v1.vector.Z * m.M.M31 + v1.W * m.M.M41,

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace LEDPiLib.Modules.Model
 {
-    public class Mesh
+    public struct Mesh
     {
-        public List<Triangle> Tris { get; set; }
+        public List<Triangle> Tris;
 
         public bool LoadFromObjectFile(string sFilename)
         {
@@ -32,7 +32,7 @@ namespace LEDPiLib.Modules.Model
                             verts.ToArray()[Convert.ToInt32(seperated[1]) - 1],
                             verts.ToArray()[Convert.ToInt32(seperated[2]) - 1],
                             verts.ToArray()[Convert.ToInt32(seperated[3]) - 1],
-                        }, new List<Vector2D>() { new Vector2D(0, 0), new Vector2D(0, 0), new Vector2D(0, 0) }));
+                        }));
                 }
             }
 

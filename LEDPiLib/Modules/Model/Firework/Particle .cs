@@ -58,7 +58,7 @@ namespace LEDPiLib.Modules.Model
 
         public bool Explode()
         {
-            if (seed && velocity.Y > 0)
+            if (seed && velocity.vector.Y > 0)
             {
                 lifespan = 0;
                 return true;
@@ -92,11 +92,11 @@ namespace LEDPiLib.Modules.Model
 
             if (seed)
             {
-                engine3D.Draw(Location.X - 1, Location.Y, pixel);
-                engine3D.Draw(Location.X, Location.Y - 1, pixel);
-                engine3D.Draw(Location.X, Location.Y, pixel);
-                engine3D.Draw(Location.X, Location.Y + 1, pixel);
-                engine3D.Draw(Location.X + 1, Location.Y, pixel);
+                engine3D.Draw(Location.vector.X - 1, Location.vector.Y, pixel);
+                engine3D.Draw(Location.vector.X, Location.vector.Y - 1, pixel);
+                engine3D.Draw(Location.vector.X, Location.vector.Y, pixel);
+                engine3D.Draw(Location.vector.X, Location.vector.Y + 1, pixel);
+                engine3D.Draw(Location.vector.X + 1, Location.vector.Y, pixel);
             }
             else
             {
@@ -110,12 +110,12 @@ namespace LEDPiLib.Modules.Model
                         break;
 
                     Vector2D pastLocation = pastLocations[i];
-                    engine3D.Draw(pastLocation.X, pastLocation.Y, new Rgba32(Convert.ToByte(trailHu.vector.X), Convert.ToByte(trailHu.vector.Y), Convert.ToByte(trailHu.vector.Z)));
+                    engine3D.Draw(pastLocation.vector.X, pastLocation.vector.Y, new Rgba32(Convert.ToByte(trailHu.vector.X), Convert.ToByte(trailHu.vector.Y), Convert.ToByte(trailHu.vector.Z)));
                     
                     trailHu = trailHu.Sub(5f, false);
                 }
 
-                engine3D.Draw(Location.X, Location.Y, pixel);
+                engine3D.Draw(Location.vector.X, Location.vector.Y, pixel);
             }
         }
 

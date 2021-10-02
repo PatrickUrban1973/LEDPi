@@ -14,7 +14,7 @@ namespace LEDPiLib.Modules
     {
         private int offset = 1;
 
-        public LEDTestModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDTestModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 30)
         {
         }
 
@@ -23,7 +23,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && offset - 1 == 1;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             Image<Rgba32> image = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
             SetBackgroundColor(image);

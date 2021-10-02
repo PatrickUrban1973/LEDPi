@@ -4,6 +4,7 @@ using LEDPiLib;
 using rpi_rgb_led_matrix_sharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System.IO;
 
 namespace LEDPiProcessor
 {
@@ -15,29 +16,24 @@ namespace LEDPiProcessor
         public LEDPIProcessorKit() :base()
         {
             canvas = matrix.CreateOffscreenCanvas();
-            processor = Process;
+            BasePath = Path.Combine("/home/pi/LEDPi/Processor");
         }
 
-        bool Process(Image<Rgba32> currentImage)
+        protected override void doProcess(Image<Rgba32> image)
         {
-            lock (currentImage)
+            for (int y = 0; y < canvas.Height; y++)
             {
-                for (int y = 0; y < canvas.Height; y++)
+                Span<Rgba32> rowSpan = image.GetPixelRowSpan(y);
+
+                for (int x = 0; x < canvas.Width; x++)
                 {
-                    Span<Rgba32> rowSpan = currentImage.GetPixelRowSpan(y);
+                    Rgba32 pixel = rowSpan[x];
 
-                    for (int x = 0; x < canvas.Width; x++)
-                    {
-                        Rgba32 pixel = rowSpan[x];
-
-                        canvas.SetPixel(x, y, new rpi_rgb_led_matrix_sharp.Color(pixel.R, pixel.G, pixel.B));
-                    }
+                    canvas.SetPixel(x, y, new rpi_rgb_led_matrix_sharp.Color(pixel.R, pixel.G, pixel.B));
                 }
-
-                canvas = matrix.SwapOnVsync(canvas);
             }
 
-            return true;
+            canvas = matrix.SwapOnVsync(canvas);
         }
     }
 }

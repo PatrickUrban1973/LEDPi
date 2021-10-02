@@ -1,0 +1,36 @@
+{
+  "ModuleConfigurations": [
+    {
+      "Module": 0,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 10,
+      "CronTime": null
+    },
+    {
+      "Module": 23,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": null
+    },
+    {
+      "Module": -3,
+      "Parameter": null,
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": "*/1 * * * *",
+      "SubConfigurations": [
+        {
+          "Module": 4,
+          "Parameter": "Breaking News",
+          "OneTime": true,
+          "Duration": 30,
+          "CronTime": null
+        }
+      ]
+    },
+ 
+  ],
+  "Loop": false
+}

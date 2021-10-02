@@ -16,10 +16,9 @@ namespace LEDPiLib.Modules
         private bool _init = false;
         private Image<Rgba32> _wholeTextImage;
         private int _offset = 0;
-        private TimeSpan _speed = new TimeSpan(0, 0, 0, 0, 15);
         private string _text;
 
-        public LEDScrollingTextModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDScrollingTextModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1, 20)
         {
             _text = moduleConfiguration.Parameter;
         }
@@ -29,7 +28,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && _offset - 1 == 0;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             if (!_init)
             {
@@ -55,11 +54,7 @@ namespace LEDPiLib.Modules
                 _wholeTextImage = loadImage.Clone();
                 _init = true;
             }
-            else
-            {
-                Thread.Sleep(_speed);
-            }
-
+            
             if (_offset + LEDPIProcessorBase.LEDWidth > _wholeTextImage.Width)
                 _offset = 0;
 

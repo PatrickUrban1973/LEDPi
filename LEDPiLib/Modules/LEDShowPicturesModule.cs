@@ -46,7 +46,7 @@ namespace LEDPiLib.Modules
             return base.completedRun() && completedDisplayRun;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             if (_pictures == null)
             {

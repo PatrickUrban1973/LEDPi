@@ -20,15 +20,11 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> loadImage = Image.Load(Resources.Title);
-
-            
-            loadImage.Mutate(x => x
-                .Resize(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight, KnownResamplers.NearestNeighbor));
-
-            return loadImage;
+            Image<Rgba32> image = Image.Load(Resources.Title);
+            image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
+            return image;
         }
     }
 }

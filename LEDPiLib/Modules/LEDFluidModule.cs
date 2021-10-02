@@ -2,7 +2,7 @@
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using LEDPiLib.DataItems;
-using LEDPiLib.Modules.Helper;
+using LEDPiLib.Modules.Model;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -11,16 +11,15 @@ namespace LEDPiLib.Modules
     public class LEDFluidModule : ModuleBase
     {
         private Fluid _fluid;
-        private const int SCALE = 1;
-        private const int N = LEDPIProcessorBase.LEDWidth;
-        private const int dropFrames = 5;
+        private readonly int N ;
+        private const int dropFrames = 10;
         private int currentFrame = 0;
-
 
         private Random _random = new Random();
 
-        public LEDFluidModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
+        public LEDFluidModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 30)
         {
+            N = renderWidth;
             _fluid = new Fluid(N, 0.2f, 0, 0.0001f);
         }
 
@@ -29,15 +28,15 @@ namespace LEDPiLib.Modules
             return false;
         }
 
-        protected override Image<Rgba32> Run()
+        protected override Image<Rgba32> RunInternal()
         {
             Image<Rgba32> image = new Image<Rgba32>(N, N);
             SetBackgroundColor(image);
 
             if (currentFrame % dropFrames == 0)
             {
-                int cx = Convert.ToInt32(0.5 * N / SCALE);
-                int cy = Convert.ToInt32(0.5 * N / SCALE);
+                int cx = Convert.ToInt32(0.5 * N / renderOffset);
+                int cy = Convert.ToInt32(0.5 * N / renderOffset);
                 for (int i = -1; i <= 1; i++)
                 {
                     for (int j = -1; j <= 1; j++)
@@ -75,9 +74,9 @@ namespace LEDPiLib.Modules
             angleInDegrees -= 90;
             // Convert from degrees to radians via multiplication by PI/180        
             float x = (float) (radius * Math.Cos(angleInDegrees * Math.PI / 180F)) +
-                      Convert.ToSingle(LEDPIProcessorBase.LEDWidth / 2);
+                      Convert.ToSingle(renderWidth / 2);
             float y = (float) (radius * Math.Sin(angleInDegrees * Math.PI / 180F)) +
-                      Convert.ToSingle(LEDPIProcessorBase.LEDHeight / 2);
+                      Convert.ToSingle(renderHeight / 2);
 
             return new PointF(x, y);
         }

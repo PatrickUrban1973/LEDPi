@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace LEDPiLib.Modules.Helper
+namespace LEDPiLib.Modules.Model
 {
     class Fluid
     {

@@ -19,14 +19,27 @@ namespace LEDPiLib
         public static Color BlackBackgroundColor = Color.Black;
         public const int LEDHeight = 64;
         public const int LEDWidth = 64;
-        private TimeSpan _frameRate = new TimeSpan(0, 0, 0, 0, 5);
         private ModuleBase lastModule;
-        protected  static Func<Image<Rgba32>, bool> processor;
         private Dictionary<string, List<Timer>> cron2Timers = new Dictionary<string, List<Timer>>();
-        private static Random random = new Random();
+        private Stopwatch _stopwatch = new Stopwatch();
+        private TimeSpan wait = new TimeSpan(0, 0, 0, 0, 5);
+        private Image<Rgba32> currentImage = new Image<Rgba32>(LEDHeight, LEDWidth);
+        private bool hasNewImage = false;
+
+        public static string BasePath = string.Empty;
+
+        public static List<Rgba32> Colors = new List<Rgba32>();
+
+        private Stopwatch frameRateWatch = new Stopwatch();
+        private static LEDFrameRateModule frameRateModule;
+
+        protected abstract void doProcess(Image<Rgba32> image);
+
+        public long LastFrameRate { get; set; }
 
         public enum LEDModules
         {
+            BreakingNews = -3,
             Grouped = -2,
             Surprise = -1,
             None,
@@ -35,7 +48,7 @@ namespace LEDPiLib
             Rain,
             ScrollingText,
             Pictures,
-            AmigaBall,
+            MoreCube,
             AmigaBallFast,
             Gif,
             ReactionDiffusion,
@@ -45,23 +58,54 @@ namespace LEDPiLib
             Firework,
             Terrain,
             Countdown,
+            RayCasting,
+            Pong,
+            TimesTablesCardioid,
+            MandelbrotSet,
+            JuliaSet,
+            LorenzAttractor,
+            Cloth,
+            Clock2,
+            Hypercube,
+            Metaball,
+            FireEffect,
+            WaterRipple,
+            Birthday,
+            Starfield,
+            Phyllotaxis,
+            BezierCurves,
+            Molecule,
+            CollatzConjecture,
         }
-
-        protected Image<Rgba32> currentImage;
 
         public LEDPIProcessorBase()
         {
+            for (var i = 0; i < 255; ++i)
+            {
+                float r = i;
+                float g = 255 - (2 * Math.Abs(i - 127));
+                float b = 255 - i;
+
+                Color color = new Rgba32(Convert.ToByte(r), Convert.ToByte(g), Convert.ToByte(b));
+
+                Colors.Add(color);
+            }
         }
 
-        public void RunModule(ModulePlaylist playlist, bool awaitTask = false)
+        private Task processTask = null;
+
+        public void RunModule(ModulePlaylist playlist, bool awaitTask = false, bool showFrameRate = false)
         {
             try
             {
-               
+                if (showFrameRate)
+                    frameRateModule = new LEDFrameRateModule(new ModuleConfiguration(), this);
+
                 bool firstRun = true;
                 currentImage = new Image<Rgba32>(LEDWidth, LEDHeight);
 
                 lastModule?.Stop();
+                _stopwatch.Restart();
 
                 // setup timer after a delay, because we need the correct system time
                 Task.Run(() =>
@@ -96,13 +140,26 @@ namespace LEDPiLib
                                 while (module.IsRunning)
                                 {
                                     lastModule = module;
-                                    Thread.Sleep(_frameRate);
-                                    module.Start(processor);
+                                    var newImage = module.Start();
+
+                                    lock (currentImage)
+                                    {
+                                        currentImage = newImage;
+                                        hasNewImage = true;
+                                    }
                                 }
                             }
                         }
                     }
                 });
+
+                if (processTask == null)
+                {
+                    processTask = Task.Run(() =>
+                    {
+                        while (process()) { }
+                    });
+                }
 
                 if (awaitTask)
                     Task.WaitAll(new Task[] { task });
@@ -116,10 +173,9 @@ namespace LEDPiLib
 
         public static ModuleBase GetModuleBase(ModuleConfiguration moduleConfiguration)
         {
-            if (moduleConfiguration.Module == LEDModules.Surprise)
+            if (moduleConfiguration.Module == LEDModules.Surprise || moduleConfiguration.Module == LEDModules.BreakingNews)
             {
-                int randomIndex = random.Next() % moduleConfiguration.SubConfigurations.Count;
-                moduleConfiguration = moduleConfiguration.SubConfigurations[randomIndex];
+                moduleConfiguration = moduleConfiguration.NextConfiguration();
             }
 
             Type type = System.Reflection.Assembly.GetCallingAssembly().GetTypes().First(c => 
@@ -142,6 +198,10 @@ namespace LEDPiLib
             Console.WriteLine("OneTime" + moduleConfiguration.OneTime);
             Console.WriteLine("Parameter" + moduleConfiguration.Parameter);
             Console.WriteLine("CronTime" + moduleConfiguration.CronTime);
+
+            if (frameRateModule != null)
+                moduleBase.AddLayerModule(frameRateModule);
+
             return moduleBase;
         }
 
@@ -176,13 +236,26 @@ namespace LEDPiLib
                 {
                     try
                     {
-                        lastModule.Pausing = true;
                         ModuleBase module = GetModuleBase(moduleConfiguration);
 
-                        while (module.IsRunning)
+                        if (moduleConfiguration.Module == LEDModules.BreakingNews)
                         {
-                            Thread.Sleep(_frameRate);
-                            module.Start(processor);
+                            ModuleBase.AddBreakingNews(module);
+                        }
+                        else
+                        {
+                            lastModule.Pausing = true;
+
+                            while (module.IsRunning)
+                            {
+                                var newImage = module.Start();
+
+                                lock (currentImage)
+                                {
+                                    currentImage = newImage.Clone();
+                                    hasNewImage = true;
+                                }
+                            }
                         }
                     }
                     catch (Exception e)
@@ -202,6 +275,36 @@ namespace LEDPiLib
                 }, null, timeToGo, Timeout.InfiniteTimeSpan);
 
                 timers.Add(moduleTimer);
+            }
+        }
+
+        protected bool process()
+        {
+            try
+            {
+                while (!hasNewImage)
+                    Thread.Sleep(wait);
+
+                LastFrameRate = frameRateWatch.ElapsedMilliseconds;
+
+                lock (currentImage)
+                {
+                    doProcess(currentImage);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+            finally
+            {
+                hasNewImage = false;
+                _stopwatch.Restart();
+                frameRateWatch.Restart();
             }
         }
     }

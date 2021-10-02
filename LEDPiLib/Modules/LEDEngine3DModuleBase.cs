@@ -16,11 +16,11 @@ namespace LEDPiLib.Modules
         protected LEDEngine3D engine3D = new LEDEngine3D();
         protected Image<Rgba32> image;
 
-        public LEDEngine3DModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset) : base(moduleConfiguration, renderOffset)
+        public LEDEngine3DModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset, int handBrake = 0) : base(moduleConfiguration, renderOffset, handBrake)
         {
         }
 
-        protected void drawTriangles(Mesh meshCube, Mat4x4 matWorld, Mat4x4 matView, Mat4x4 matProj, Vector3D vCamera, Vector3D light_direction, bool wire)
+        protected void drawTriangles(Mesh meshCube, Mat4x4 matWorld, Mat4x4 matView, Mat4x4 matProj, Vector3D vCamera, Vector3D light_direction, bool wire, bool withLight = true)
         {
             Stack<Triangle> vecTrianglesToRaster = new Stack<Triangle>();
 
@@ -33,10 +33,11 @@ namespace LEDPiLib.Modules
                     matWorld * tri.P[0],
                     matWorld * tri.P[1],
                     matWorld * tri.P[2],
-                }, new List<Vector2D>() { tri.T[0], tri.T[1], tri.T[2] });
+                })
+                { color = tri.color };
 
 
-                Triangle triProjected = new Triangle(new List<Vector3D>(), new List<Vector2D>());
+                Triangle triProjected = new Triangle(new List<Vector3D>());
                 Triangle triViewed;
 
                 // Calculate Triangle Normal
@@ -58,14 +59,21 @@ namespace LEDPiLib.Modules
                 // If ray is aligned with normal, then Triangle is visible
                 if (normal * vCameraRay < 0.0f)
                 {
-                    // Illumination
-                    light_direction = light_direction.Normalise();
+                    if (withLight)
+                    {
+                        // Illumination
+                        light_direction = light_direction.Normalise();
 
-                    // How "aligned" are light direction and Triangle surface normal?
-                    float dp = Math.Max(0.1f, light_direction * normal);
+                        // How "aligned" are light direction and Triangle surface normal?
+                        float dp = Math.Max(0.1f, light_direction * normal);
 
-                    // Choose console colours as required (much easier with RGB)
-                    triTransformed.color = engine3D.GetColour(dp);
+                        // Choose console colours as required (much easier with RGB)
+                        triTransformed.color = engine3D.GetColour(dp);
+                    }
+                    else
+                    {
+                        triTransformed.color = tri.color;
+                    }
 
                     // Convert World Space --> View Space
                     triViewed = new Triangle(
@@ -74,10 +82,9 @@ namespace LEDPiLib.Modules
                             matView * triTransformed.P[0],
                             matView * triTransformed.P[1],
                             matView * triTransformed.P[2]
-                        }, new List<Vector2D>() { triTransformed.T[0], triTransformed.T[1], triTransformed.T[2] });
-
-                    triViewed.color = triTransformed.color;
-
+                        })
+                    { color = triTransformed.color };
+                    
                     // Clip Viewed Triangle against near plane, this could form two additional
                     // additional Triangles. 
                     int nClippedTriangles = 0;
@@ -95,16 +102,6 @@ namespace LEDPiLib.Modules
                         triProjected.P.Add(matProj * clipped[n].P[1]);
                         triProjected.P.Add(matProj * clipped[n].P[2]);
                         triProjected.color = clipped[n].color;
-                        triProjected.T.Add(clipped[n].T[0]);
-                        triProjected.T.Add(clipped[n].T[1]);
-                        triProjected.T.Add(clipped[n].T[2]);
-
-                        triProjected.T.Add(new Vector2D(triProjected.T[0].X / triProjected.P[0].W,
-                            triProjected.T[0].Y / triProjected.P[0].W, 1.0f / triProjected.P[0].W));
-                        triProjected.T.Add(new Vector2D(triProjected.T[1].X / triProjected.P[1].W,
-                            triProjected.T[1].Y / triProjected.P[1].W, 1.0f / triProjected.P[1].W));
-                        triProjected.T.Add(new Vector2D(triProjected.T[2].X / triProjected.P[2].W,
-                            triProjected.T[2].Y / triProjected.P[2].W, 1.0f / triProjected.P[2].W));
 
                         // Scale into view, we moved the normalising into cartesian space
                         // out of the matrix.vector function from the previous videos, so
@@ -113,33 +110,33 @@ namespace LEDPiLib.Modules
                         triProjected.P[1] = triProjected.P[1] / triProjected.P[1].W;
                         triProjected.P[2] = triProjected.P[2] / triProjected.P[2].W;
 
-                        var test0 = triProjected.P[0];
-                        var test1 = triProjected.P[1];
-                        var test2 = triProjected.P[2];
+                        Vector3D triProjectedVector0 = triProjected.P[0];
+                        Vector3D triProjectedVector1 = triProjected.P[1];
+                        Vector3D triProjectedVector2 = triProjected.P[2];
 
                         // X/Y are inverted so put them back
-                        test0.vector.X *= -1.0f;
-                        test1.vector.X *= -1.0f;
-                        test2.vector.X *= -1.0f;
-                        test0.vector.Y *= -1.0f;
-                        test1.vector.Y *= -1.0f;
-                        test2.vector.Y *= -1.0f;
+                        triProjectedVector0.vector.X *= -1.0f;
+                        triProjectedVector1.vector.X *= -1.0f;
+                        triProjectedVector2.vector.X *= -1.0f;
+                        triProjectedVector0.vector.Y *= -1.0f;
+                        triProjectedVector1.vector.Y *= -1.0f;
+                        triProjectedVector2.vector.Y *= -1.0f;
 
                         // Offset verts into visible normalised space
                         Vector3D vOffsetView = new Vector3D(1, 1, 0);
-                        test0 += vOffsetView;
-                        test1 += vOffsetView;
-                        test2 += vOffsetView;
-                        test0.vector.X *= 0.5f * (float)renderWidth;
-                        test0.vector.Y *= 0.5f * (float)renderHeight;
-                        test1.vector.X *= 0.5f * (float)renderWidth;
-                        test1.vector.Y *= 0.5f * (float)renderHeight;
-                        test2.vector.X *= 0.5f * (float)renderWidth;
-                        test2.vector.Y *= 0.5f * (float)renderHeight;
+                        triProjectedVector0 += vOffsetView;
+                        triProjectedVector1 += vOffsetView;
+                        triProjectedVector2 += vOffsetView;
+                        triProjectedVector0.vector.X *= 0.5f * (float)renderWidth;
+                        triProjectedVector0.vector.Y *= 0.5f * (float)renderHeight;
+                        triProjectedVector1.vector.X *= 0.5f * (float)renderWidth;
+                        triProjectedVector1.vector.Y *= 0.5f * (float)renderHeight;
+                        triProjectedVector2.vector.X *= 0.5f * (float)renderWidth;
+                        triProjectedVector2.vector.Y *= 0.5f * (float)renderHeight;
 
-                        triProjected.P[0] = test0;
-                        triProjected.P[1] = test1;
-                        triProjected.P[2] = test2;
+                        triProjected.P[0] = triProjectedVector0;
+                        triProjected.P[1] = triProjectedVector1;
+                        triProjected.P[2] = triProjectedVector2;
 
                         // Store Triangle for sorting
                         vecTrianglesToRaster.Push(triProjected);
@@ -150,10 +147,16 @@ namespace LEDPiLib.Modules
             // Clear Screen
             SetBackgroundColor(image);
 
-            Stack<Triangle> listTriangles = new Stack<Triangle>();
+            Stack<Triangle> listTriangles = null;
+            List<Triangle> completeList = new List<Triangle>();
+
             // Loop through all transformed, viewed, projected, and sorted Triangles
             foreach (Triangle triToRaster in vecTrianglesToRaster)
             {
+                if (listTriangles != null)
+                    completeList.AddRange(listTriangles);
+
+                listTriangles = new Stack<Triangle>();
 
                 // Clip Triangles against all four screen edges, this could yield
                 // a bunch of Triangles, so create a queue that we traverse to 
@@ -197,16 +200,19 @@ namespace LEDPiLib.Modules
                 }
             }
 
+            // pick up the last triangles
+            if (listTriangles != null)
+                completeList.AddRange(listTriangles);
+
             // Draw the transformed, viewed, clipped, projected, sorted, clipped Triangles
-            foreach (Triangle t in listTriangles)
+            foreach (Triangle t in completeList)
             {
                 if(!wire)
                     engine3D.FillTriangle(t.P[0].vector.X, t.P[0].vector.Y, t.P[1].vector.X, t.P[1].vector.Y, t.P[2].vector.X, t.P[2].vector.Y, t.color);
                 else
-                    engine3D.DrawTriangle(t.P[0].vector.X, t.P[0].vector.Y, t.P[1].vector.X, t.P[1].vector.Y, t.P[2].vector.X, t.P[2].vector.Y, Color.White);
+                    engine3D.DrawTriangle(t.P[0].vector.X, t.P[0].vector.Y, t.P[1].vector.X, t.P[1].vector.Y, t.P[2].vector.X, t.P[2].vector.Y, t.color);
             }
 
         }
-
     }
 }
