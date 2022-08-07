@@ -1,24 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
+﻿using System.Numerics;
 
 namespace LEDPiLib.Modules.Model.Molecule
 {
     public class MoleculeParticle
     {
-        public Vector2D Pos { get; set; }
-        public Vector2D Vel { get; set; }
-        public Vector2D Acc { get; private set; }
+        public Vector2 Pos { get; set; }
+        public Vector2 Vel { get; set; }
+        public Vector2 Acc { get; private set; }
 
         public MoleculeParticle(float x, float y)
         {
-            Pos = new Vector2D(x, y);
-            Vel = new Vector2D();
-            Acc = new Vector2D();
+            Pos = new Vector2(x, y);
+            Vel = new Vector2();
+            Acc = new Vector2();
         }
 
-        public void ApplyForce(Vector2D force)
+        public void ApplyForce(Vector2 force)
         {
             Acc += force;
         }
@@ -32,20 +29,20 @@ namespace LEDPiLib.Modules.Model.Molecule
 
         public void Edges(float width, float height)
         {
-            if (Pos.vector.X < 0)
+            if (Pos.X < 0)
             {
-                Pos = new Vector2D(0, Pos.vector.Y);
-                Vel = new Vector2D(Vel.vector.X * -1, Vel.vector.Y);
+                Pos = new Vector2(0, Pos.Y);
+                Vel = new Vector2(Vel.X * -1, Vel.Y);
             }
-            else if (Pos.vector.X > width)
+            else if (Pos.X > width)
             {
-                Pos = new Vector2D(width, Pos.vector.Y);
-                Vel = new Vector2D(Vel.vector.X * -1, Vel.vector.Y);
+                Pos = new Vector2(width, Pos.Y);
+                Vel = new Vector2(Vel.X * -1, Vel.Y);
             }
-            else if (Pos.vector.Y > height)
+            else if (Pos.Y > height)
             {
-                Pos = new Vector2D(Pos.vector.X, height);
-                Vel = new Vector2D(Vel.vector.X, Vel.vector.Y * -1);
+                Pos = new Vector2(Pos.X, height);
+                Vel = new Vector2(Vel.X, Vel.Y * -1);
             }
         }
 

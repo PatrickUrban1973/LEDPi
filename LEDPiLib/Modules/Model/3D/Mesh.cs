@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LEDPiLib.Modules.Model.Common;
 
 namespace LEDPiLib.Modules.Model
 {

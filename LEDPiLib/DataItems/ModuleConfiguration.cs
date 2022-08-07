@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using LEDPiLib.Modules.Helper;
 
 namespace LEDPiLib.DataItems
 {
     public class ModuleConfiguration
     {
-        private ModuleConfiguration nextConfiguration = null;
+        private static readonly Dictionary<ModuleConfiguration, List<ModuleConfiguration>> nextConfigurationMap =
+            new Dictionary<ModuleConfiguration, List<ModuleConfiguration>>();
 
         public LEDPIProcessorBase.LEDModules Module { get; set; }
 
@@ -19,20 +20,20 @@ namespace LEDPiLib.DataItems
 
         public List<ModuleConfiguration> SubConfigurations { get; set; }
 
-
-        private List<ModuleConfiguration> shuffleList;
-
-        public ModuleConfiguration NextConfiguration()
+        public ModuleConfiguration NextConfiguration(ModuleConfiguration moduleConfiguration, bool withShuffle)
         {
-            if (nextConfiguration == null)
+            if (!nextConfigurationMap.ContainsKey(moduleConfiguration))
             {
-                shuffleList = new List<ModuleConfiguration>(SubConfigurations);
-                FisherYatesShuffle(shuffleList);
+                List<ModuleConfiguration> shuffleList = new List<ModuleConfiguration>(SubConfigurations);
+                if (withShuffle)
+                    FisherYatesShuffle(shuffleList);
+
+                nextConfigurationMap.Add(moduleConfiguration, shuffleList);
             }
 
-            nextConfiguration = shuffleList[0];
-            shuffleList.RemoveAt(0);
-            shuffleList.Add(nextConfiguration);
+            ModuleConfiguration nextConfiguration = nextConfigurationMap[moduleConfiguration][0];
+            nextConfigurationMap[moduleConfiguration].RemoveAt(0);
+            nextConfigurationMap[moduleConfiguration].Add(nextConfiguration);
 
             return nextConfiguration ;
         }
@@ -40,16 +41,12 @@ namespace LEDPiLib.DataItems
         private static void FisherYatesShuffle<T>(IList<T> list)
         {
             int count = list.Count;
-            var random = new Random();
-
             for (int i = 0; i < count; i++)
             {
                 //Randomly set n to a value >=i but<count
-                int n = random.Next(i, count);
+                int n = MathHelper.GlobalRandom().Next(i, count);
                 //swap the contents of list[n] with those of list[i]
-                T temp = list[n];
-                list[n] = list[i];
-                list[i] = temp;
+                (list[n], list[i]) = (list[i], list[n]);
             }
         }
 

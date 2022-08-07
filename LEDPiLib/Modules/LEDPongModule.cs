@@ -3,37 +3,37 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using LEDPiLib.DataItems;
 using static LEDPiLib.LEDPIProcessorBase;
-using LEDPiLib.Modules.Model;
 using Rectangle = LEDPiLib.Modules.Model.Rectangle;
 using LEDPiLib.Modules.Helper;
 using System.Threading;
 using LEDPiLib.Modules.Model.Pong;
+using System.Numerics;
 
 namespace LEDPiLib.Modules
 {
     [LEDModule(LEDModules.Pong)]
     public class LEDPongModule : ModuleBase
     {
-        private LEDEngine3D engine3D = new LEDEngine3D();
+        private readonly LEDEngine3D engine3D = new LEDEngine3D();
 
-        private Paddle paddlePlayer1;
-        private Paddle paddlePlayer2;
-        private Ball ball;
-        private Digit digitPlayer1;
-        private Digit digitPlayer2;
+        private readonly Paddle paddlePlayer1;
+        private readonly Paddle paddlePlayer2;
+        private readonly Ball ball;
+        private readonly Digit digitPlayer1;
+        private readonly Digit digitPlayer2;
 
-        private int scorePlayer1 = 0;
-        private int scorePlayer2 = 0;
+        private int scorePlayer1;
+        private int scorePlayer2;
 
         public LEDPongModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 15)
         {
-            ball = new Ball(new Vector2D(renderWidth, renderHeight));
+            ball = new Ball(new Vector2(renderWidth, renderHeight));
 
-            paddlePlayer1 = new Paddle(true, ref ball, new Vector2D(renderWidth, renderHeight));
-            paddlePlayer2 = new Paddle(false, ref ball, new Vector2D(renderWidth, renderHeight));
+            paddlePlayer1 = new Paddle(true, ref ball, new Vector2(renderWidth, renderHeight));
+            paddlePlayer2 = new Paddle(false, ref ball, new Vector2(renderWidth, renderHeight));
 
-            digitPlayer1 = new Digit(new Vector2D((renderWidth / 2) - 10, 2));
-            digitPlayer2 = new Digit(new Vector2D((renderWidth / 2) + 5, 2));
+            digitPlayer1 = new Digit(new Vector2((renderWidth / 2) - 10, 2));
+            digitPlayer2 = new Digit(new Vector2((renderWidth / 2) + 5, 2));
         }
 
         protected override bool completedRun()
@@ -43,15 +43,14 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
             engine3D.Canvas = image;
 
             ball.Draw(engine3D);
             paddlePlayer1.Draw(engine3D);
             paddlePlayer2.Draw(engine3D);
 
-            engine3D.DrawFilledRectangle(new Rectangle(new Vector2D(renderWidth / 2, 0), new Vector2D(0, renderHeight), Color.White));
+            engine3D.DrawFilledRectangle(new Rectangle(new Vector2(renderWidth / 2, 0), new Vector2(0, renderHeight), Color.White));
 
             digitPlayer1.Draw(scorePlayer1, engine3D);
             digitPlayer2.Draw(scorePlayer2, engine3D);

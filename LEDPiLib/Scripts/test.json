@@ -1,13 +1,12 @@
 {
   "ModuleConfigurations": [
-    
+
     {
-      "Module":18,
-      "Parameter": null,
-      "OneTime": false,
+      "Module": 5,
+      "Parameter": "/home/pi/LEDPi/Media/Pics/4/",
+      "OneTime": true,
       "Duration": 0,
-      "CronTime": null,
-      "SubConfigurations": null
+      "CronTime": null
     }
 
   ],

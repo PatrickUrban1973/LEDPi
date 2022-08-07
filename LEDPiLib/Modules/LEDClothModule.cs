@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Model.Cloth;
 using SixLabors.ImageSharp;
@@ -11,13 +10,13 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Cloth)]
     public class LEDClothModule : ModuleBase
     {
-        private int cols = 12;
-        private int rows = 7;
-        private int border = 2;
-        private int engineRange = 20;
+        private const int cols = 12;
+        private const int rows = 7;
+        private const int border = 2;
+        private const int engineRange = 20;
 
-        private List<ClothPointBase> points = new List<ClothPointBase>();
-        private List<Stick> sticks = new List<Stick>();
+        private readonly List<ClothPointBase> points = new List<ClothPointBase>();
+        private readonly List<Stick> sticks = new List<Stick>();
 
         public LEDClothModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f, 20)
         {
@@ -66,40 +65,11 @@ namespace LEDPiLib.Modules
 
                 firstRow = false;
             }
-
-
-        //    points.Add(new Point(100, 100, 100, 100));
-        //    points.Add(new Point(200, 100, 200, 100));
-        //    points.Add(new Point(200, 200, 200, 200));
-        //    points.Add(new Point(100, 200, 100, 200));
-
-        //    points.Add(new Point(150, 0, 150, 0, true));
-        //    //points.Add(new Point(250, 100, 250, 100));
-        //    //points.Add(new Point(450, 100, 450, 100, true));
-
-
-        //    sticks.Add(new Stick(points[0], points[1]));
-        //    sticks.Add(new Stick(points[0], points[2], true));
-        //    sticks.Add(new Stick(points[1], points[2]));
-        //    sticks.Add(new Stick(points[2], points[3]));
-        //    sticks.Add(new Stick(points[3], points[0]));
-        //    sticks.Add(new Stick(points[0], points[4]));
-        //    //sticks.Add(new Stick(points[4], points[5]));
-        //    //sticks.Add(new Stick(points[5], points[6]));
         }
-
-        private float distance(Point p0, Point p1)
-        {
-            float dx = p1.X - p0.X;
-            float dy = p1.Y - p0.Y;
-            return Convert.ToSingle(Math.Sqrt(dx * dx + dy * dy));
-        }
-
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
             points.ForEach(c => c.Update());
 

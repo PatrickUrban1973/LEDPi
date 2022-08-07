@@ -10,8 +10,8 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Starfield)]
     public class LEDStarfieldModule : ModuleBase
     {
-        private List<Star> stars = new List<Star>();
-        private float speed = 2.5f;
+        private readonly List<Star> stars = new List<Star>();
+        private const float speed = 2.5f;
 
         public LEDStarfieldModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 30)
         {
@@ -31,8 +31,7 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
             foreach (Star star in stars)
             {

@@ -63,7 +63,7 @@ namespace LEDPiLib
             TimesTablesCardioid,
             MandelbrotSet,
             JuliaSet,
-            LorenzAttractor,
+            Vertex,
             Cloth,
             Clock2,
             Hypercube,
@@ -75,7 +75,16 @@ namespace LEDPiLib
             Phyllotaxis,
             BezierCurves,
             Molecule,
-            CollatzConjecture,
+            SpaceColonization,
+            Sprites,
+            SuperShape,
+            Snowflake,
+            BrownianTreeSnowflake,
+            MatrixRain,
+            MutualAttraction,
+            Museum,
+            Maze,
+            WorleyNoise,
         }
 
         public LEDPIProcessorBase()
@@ -173,9 +182,9 @@ namespace LEDPiLib
 
         public static ModuleBase GetModuleBase(ModuleConfiguration moduleConfiguration)
         {
-            if (moduleConfiguration.Module == LEDModules.Surprise || moduleConfiguration.Module == LEDModules.BreakingNews)
+            if (moduleConfiguration.Module == LEDModules.Surprise || moduleConfiguration.Module == LEDModules.BreakingNews || moduleConfiguration.Module == LEDModules.Grouped)
             {
-                moduleConfiguration = moduleConfiguration.NextConfiguration();
+                moduleConfiguration = moduleConfiguration.NextConfiguration(moduleConfiguration, moduleConfiguration.Module == LEDModules.Surprise);
             }
 
             Type type = System.Reflection.Assembly.GetCallingAssembly().GetTypes().First(c => 

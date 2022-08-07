@@ -30,14 +30,12 @@ namespace LEDPiProcessor
             rootCommand.InvokeAsync(args);
         }
 
-        public static void Execute(string playlist, string parameter, bool showframerate)
+        private static void Execute(string playlist, string parameter, bool showframerate)
         {
             if (!string.IsNullOrEmpty(playlist))
             {
-                using (StreamReader r = new StreamReader(playlist))
-                {
-                    parameter = r.ReadToEnd();
-                }
+                using StreamReader r = new StreamReader(playlist);
+                parameter = r.ReadToEnd();
             }
 
             ModulePlaylist mp = JsonConvert.DeserializeObject<ModulePlaylist>(parameter);

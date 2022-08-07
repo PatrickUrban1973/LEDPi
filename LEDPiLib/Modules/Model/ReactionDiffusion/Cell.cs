@@ -1,6 +1,4 @@
-﻿using LEDPiLib.Modules.Helper;
-using System;
-namespace LEDPiLib.Modules.Model
+﻿namespace LEDPiLib.Modules.Model.ReactionDiffusion
 {
     public class Cell
     {
@@ -21,6 +19,6 @@ namespace LEDPiLib.Modules.Model
         }
 
         public float A { get; set; } = 1;
-        public float B { get; set; } = 0;
+        public float B { get; set; }
     }
 }

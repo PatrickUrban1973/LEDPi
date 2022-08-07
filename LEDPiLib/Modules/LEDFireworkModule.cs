@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
-using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.Firework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -14,11 +14,9 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Firework)]
     public class LEDFireworkModule : ModuleBase
     {
-        private LEDEngine3D engine3D = new LEDEngine3D();
-        List<Firework> fireworks = new List<Firework>();
-        private Random random = new Random();
-        private Vector2D gravity = new Vector2D(0, 0.4f);
-
+        private readonly LEDEngine3D engine3D = new LEDEngine3D();
+        private readonly List<Firework> fireworks = new List<Firework>();
+        private readonly Vector2 gravity = new Vector2(0, 0.4f);
         private Image<Rgba32> image;
 
         public LEDFireworkModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f, 30)
@@ -33,11 +31,12 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            image = GetNewImage();
+            UseBlend(image, 0.75f);
+
             engine3D.Canvas = image;
 
-            if (random.NextDouble() < 0.08)
+            if (MathHelper.GlobalRandom().NextDouble() < 0.08)
             {
                 fireworks.Add(new Firework(renderWidth, renderHeight));
             }
@@ -52,6 +51,7 @@ namespace LEDPiLib.Modules
                 }
             }
 
+            SetLastPictureBlend(image);
             return image;
         }
     }

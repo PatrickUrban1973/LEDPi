@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using LEDPiLib.DataItems;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -13,14 +12,32 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.ScrollingText)]
     public class LEDScrollingTextModule : ModuleBase
     {
-        private bool _init = false;
-        private Image<Rgba32> _wholeTextImage;
-        private int _offset = 0;
-        private string _text;
+        private enum Position { Top, Middle, Bottom};
 
+        private bool _init;
+        private Image<Rgba32> _wholeTextImage;
+        private int _offset;
+        private readonly string _text;
+        private readonly string _color = string.Empty;
+        private readonly Position _position = Position.Middle;
+
+             
         public LEDScrollingTextModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1, 20)
         {
-            _text = moduleConfiguration.Parameter;
+            string[] parameters = moduleConfiguration.Parameter.Split(';');
+
+            if (parameters.Length > 0)
+            {
+                _text = parameters[0];
+            }
+            if (parameters.Length > 1)
+            {
+                _position = (Position)Enum.Parse(typeof(Position), parameters[1]);
+            }
+            if (parameters.Length > 2)
+            {
+                _color = parameters[2];
+            }
         }
 
         protected override bool completedRun()
@@ -32,24 +49,31 @@ namespace LEDPiLib.Modules
         {
             if (!_init)
             {
-                FontFamily fo;
-
-                SystemFonts.TryFind("Times New Roman", out fo);
+                SystemFonts.TryGet("Times New Roman", out var fo);
                 var font = new Font(fo, 30, FontStyle.Regular);
                 FontRectangle size = TextMeasurer.Measure(
                     _text,
-                    new RendererOptions(font));
+                    new TextOptions(font));
 
                 Image<Rgba32> loadImage =
-                    new Image<Rgba32>(Convert.ToInt32(size.Width) + (2 * LEDPIProcessorBase.LEDWidth),
-                        Math.Max(Convert.ToInt32(size.Height), LEDPIProcessorBase.LEDHeight));
+                    new Image<Rgba32>(Convert.ToInt32(size.Width) + (2 * LEDWidth),
+                        Math.Max(Convert.ToInt32(size.Height), LEDHeight), GetBackground());
 
-                SetBackgroundColor(loadImage);
+                float position = 0;
+                if (_position == Position.Middle)
+                    position = (loadImage.Height - size.Height) / 2;
+                else if (_position == Position.Bottom)
+                    position = (loadImage.Height - size.Height);
+
+                Color color = Color.LightYellow;
+
+                if (!string.IsNullOrEmpty(_color))
+                    color = Color.ParseHex(_color.Trim());
 
                 loadImage.Mutate(c =>
                     c.DrawText(
                             _text,
-                            font, Color.LightYellow, new PointF(LEDPIProcessorBase.LEDWidth, (loadImage.Height - size.Height) / 2)));
+                            font, color, new PointF(LEDPIProcessorBase.LEDWidth, position)));
 
                 _wholeTextImage = loadImage.Clone();
                 _init = true;

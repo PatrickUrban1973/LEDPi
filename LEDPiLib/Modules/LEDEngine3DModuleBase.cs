@@ -2,27 +2,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using System.Diagnostics;
 
 namespace LEDPiLib.Modules
 {
     public abstract class LEDEngine3DModuleBase : ModuleBase
     {
-        protected LEDEngine3D engine3D = new LEDEngine3D();
+        private Vector3D? lastPoint = null;
+        protected readonly LEDEngine3D engine3D = new LEDEngine3D();
         protected Image<Rgba32> image;
 
-        public LEDEngine3DModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset, int handBrake = 0) : base(moduleConfiguration, renderOffset, handBrake)
+        protected LEDEngine3DModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset, int handBrake = 0) : base(moduleConfiguration, renderOffset, handBrake)
         {
         }
 
         protected void drawTriangles(Mesh meshCube, Mat4x4 matWorld, Mat4x4 matView, Mat4x4 matProj, Vector3D vCamera, Vector3D light_direction, bool wire, bool withLight = true)
         {
             Stack<Triangle> vecTrianglesToRaster = new Stack<Triangle>();
+            Stack<Triangle> listTriangles = null;
+            List<Triangle> completeList = new List<Triangle>();
 
             // Draw Triangles
             foreach (Triangle tri in meshCube.Tris)
@@ -36,19 +38,15 @@ namespace LEDPiLib.Modules
                 })
                 { color = tri.color };
 
-
                 Triangle triProjected = new Triangle(new List<Vector3D>());
-                Triangle triViewed;
 
                 // Calculate Triangle Normal
-                Vector3D normal, line1, line2;
-
                 // Get lines either side of Triangle
-                line1 = triTransformed.P[1] - triTransformed.P[0];
-                line2 = triTransformed.P[2] - triTransformed.P[0];
+                Vector3D line1 = triTransformed.P[1] - triTransformed.P[0];
+                Vector3D line2 = triTransformed.P[2] - triTransformed.P[0];
 
                 // Take cross product of lines to get normal to Triangle surface
-                normal = line1.CrossProduct(line2);
+                Vector3D normal = line1.CrossProduct(line2);
 
                 // You normally need to normalise a normal!
                 normal = normal.Normalise();
@@ -76,7 +74,7 @@ namespace LEDPiLib.Modules
                     }
 
                     // Convert World Space --> View Space
-                    triViewed = new Triangle(
+                    Triangle triViewed = new Triangle(
                         new List<Vector3D>()
                         {
                             matView * triTransformed.P[0],
@@ -87,10 +85,9 @@ namespace LEDPiLib.Modules
                     
                     // Clip Viewed Triangle against near plane, this could form two additional
                     // additional Triangles. 
-                    int nClippedTriangles = 0;
                     List<Triangle> clipped = new List<Triangle>();
 
-                    nClippedTriangles = engine3D.Triangle_ClipAgainstPlane(new Vector3D(0.0f, 0.0f, 0.1f),
+                    var nClippedTriangles = engine3D.Triangle_ClipAgainstPlane(new Vector3D(0.0f, 0.0f, 0.1f),
                         new Vector3D(0.0f, 0.0f, 1.0f), triViewed, ref clipped);
 
                     // We may end up with multiple Triangles form the clip, so project as
@@ -106,9 +103,9 @@ namespace LEDPiLib.Modules
                         // Scale into view, we moved the normalising into cartesian space
                         // out of the matrix.vector function from the previous videos, so
                         // do this manually
-                        triProjected.P[0] = triProjected.P[0] / triProjected.P[0].W;
-                        triProjected.P[1] = triProjected.P[1] / triProjected.P[1].W;
-                        triProjected.P[2] = triProjected.P[2] / triProjected.P[2].W;
+                        triProjected.P[0] /= triProjected.P[0].W;
+                        triProjected.P[1] /= triProjected.P[1].W;
+                        triProjected.P[2] /= triProjected.P[2].W;
 
                         Vector3D triProjectedVector0 = triProjected.P[0];
                         Vector3D triProjectedVector1 = triProjected.P[1];
@@ -127,12 +124,12 @@ namespace LEDPiLib.Modules
                         triProjectedVector0 += vOffsetView;
                         triProjectedVector1 += vOffsetView;
                         triProjectedVector2 += vOffsetView;
-                        triProjectedVector0.vector.X *= 0.5f * (float)renderWidth;
-                        triProjectedVector0.vector.Y *= 0.5f * (float)renderHeight;
-                        triProjectedVector1.vector.X *= 0.5f * (float)renderWidth;
-                        triProjectedVector1.vector.Y *= 0.5f * (float)renderHeight;
-                        triProjectedVector2.vector.X *= 0.5f * (float)renderWidth;
-                        triProjectedVector2.vector.Y *= 0.5f * (float)renderHeight;
+                        triProjectedVector0.vector.X *= 0.5f * renderWidth;
+                        triProjectedVector0.vector.Y *= 0.5f * renderHeight;
+                        triProjectedVector1.vector.X *= 0.5f * renderWidth;
+                        triProjectedVector1.vector.Y *= 0.5f * renderHeight;
+                        triProjectedVector2.vector.X *= 0.5f * renderWidth;
+                        triProjectedVector2.vector.Y *= 0.5f * renderHeight;
 
                         triProjected.P[0] = triProjectedVector0;
                         triProjected.P[1] = triProjectedVector1;
@@ -143,12 +140,6 @@ namespace LEDPiLib.Modules
                     }
                 }
             }
-
-            // Clear Screen
-            SetBackgroundColor(image);
-
-            Stack<Triangle> listTriangles = null;
-            List<Triangle> completeList = new List<Triangle>();
 
             // Loop through all transformed, viewed, projected, and sorted Triangles
             foreach (Triangle triToRaster in vecTrianglesToRaster)
@@ -213,6 +204,26 @@ namespace LEDPiLib.Modules
                     engine3D.DrawTriangle(t.P[0].vector.X, t.P[0].vector.Y, t.P[1].vector.X, t.P[1].vector.Y, t.P[2].vector.X, t.P[2].vector.Y, t.color);
             }
 
+        }
+
+        protected List<Triangle> addVertex(Vector3D point, Color color)
+        {
+            List<Triangle> ret = new List<Triangle>();
+            
+            if (lastPoint.HasValue)
+            {
+                Vector3D point2 = point + new Vector3D(0.01f, 0f, 0f);
+                Vector3D lastPoint2 = lastPoint.Value + new Vector3D(0.01f, 0f, 0f);
+
+                
+                ret.Add(new Triangle(new List<Vector3D> {lastPoint.Value, lastPoint2, point})
+                    {color = color });
+                ret.Add(new Triangle(new List<Vector3D> { lastPoint2, point, point2 })
+                    { color = color });
+            }
+            
+            lastPoint = point;
+            return ret;
         }
     }
 }

@@ -17,10 +17,9 @@ namespace LEDPiLib.Modules
         private readonly float maxSum;
         public LEDMetaballModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 30)
         {
-            Random random = new Random();
             for (int i = 0; i < 5; i++)
             {
-                blobs.Add(new Blob(random.Next(renderWidth), random.Next(renderHeight)));
+                blobs.Add(new Blob(MathHelper.GlobalRandom().Next(renderWidth), MathHelper.GlobalRandom().Next(renderHeight)));
                 maxSum = 7f * blobs.Count;
             }
         }
@@ -32,39 +31,42 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            List<Vector3D> projected3d = new List<Vector3D>();
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
+            Image<Rgba32> image = GetNewImage();
 
-            for (int x = 0; x < renderWidth; x++)
+            image.ProcessPixelRows(accessor =>
             {
                 for (int y = 0; y < renderHeight; y++)
                 {
-                    int index = x + y * renderWidth;
-                    float sum = 0;
-                    foreach (Blob b in blobs)
+                    var row = accessor.GetRowSpan(y);
+                    for (int x = 0; x < renderWidth; x++)
                     {
-                        float xdif = x - b.pos.vector.X;
-                        float ydif = y - b.pos.vector.Y;
-                        double d = Math.Sqrt((xdif * xdif) + (ydif * ydif));
-                        
-                        //   float d = Vector2.Distance(new Vector2(x, y), b.pos.vector);
+                        float sum = 0;
+                        foreach (Blob b in blobs)
+                        {
+                            float xdif = x - b.pos.X;
+                            float ydif = y - b.pos.Y;
+                            double d = Math.Sqrt((xdif * xdif) + (ydif * ydif));
 
-                        if (d > 0)
-                            sum += Convert.ToSingle(10 * b.r / d);
-                        else
+                            //   float d = Vector2.Distance(new Vector2(x, y), b.pos.vector);
+
+                            if (d > 0)
+                                sum += (float)(10 * b.r / d);
+                            else
+                                sum = maxSum;
+                        }
+
+                        if (sum > maxSum)
                             sum = maxSum;
+
+                        float colorSum = MathHelper.Map(sum, 0, maxSum, 0f, 254f);
+                        //          Debug.Print(sum.ToString());
+
+                        row[x] = new Color(new Rgba32(Convert.ToByte(colorSum % 50),
+                            Convert.ToByte(colorSum), Convert.ToByte(colorSum)));
+
                     }
-
-                    if (sum > maxSum)
-                        sum = maxSum;
-
-                    float colorSum = MathHelper.Map(sum, 0, maxSum, 0f, 254f);
-                    //          Debug.Print(sum.ToString());
-
-                    image.GetPixelRowSpan(y)[x] =new Color(new Rgba32(Convert.ToByte(colorSum % 50), Convert.ToByte(colorSum), Convert.ToByte(colorSum)));  
-
                 }
-            }
+            });
 
 //            blobs.ForEach(c => c.Draw(image));
 

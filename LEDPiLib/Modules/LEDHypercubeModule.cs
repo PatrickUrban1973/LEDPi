@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Numerics;
 using LEDPiLib.DataItems;
+using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -15,36 +17,36 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Hypercube)]
     public class LEDHypercubeModule : ModuleBase
     {
-        private float angle = 0;
-        private List<Vector4D> points;
+        private float angle;
+        private readonly List<Vector4> points;
         private readonly float screenOffset;
-        private readonly int secondDegree = 0;
+        private readonly int secondDegree;
 
         public LEDHypercubeModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 25)
         {
-            points = new List<Vector4D>()
+            points = new List<Vector4>()
             {
-                new Vector4D(-1, -1, -1, 1),
-                new Vector4D(1, -1, -1, 1),
-                new Vector4D(1, 1, -1, 1),
-                new Vector4D(-1, 1, -1, 1),
-                new Vector4D(-1, -1, 1, 1),
-                new Vector4D(1, -1, 1, 1),
-                new Vector4D(1, 1, 1, 1),
-                new Vector4D(-1, 1, 1, 1),
-                new Vector4D(-1, -1, -1, -1),
-                new Vector4D(1, -1, -1, -1),
-                new Vector4D(1, 1, -1, -1),
-                new Vector4D(-1, 1, -1, -1),
-                new Vector4D(-1, -1, 1, -1),
-                new Vector4D(1, -1, 1, -1),
-                new Vector4D(1, 1, 1, -1),
-                new Vector4D(-1, 1, 1, -1),
+                new Vector4(-1, -1, -1, 1),
+                new Vector4(1, -1, -1, 1),
+                new Vector4(1, 1, -1, 1),
+                new Vector4(-1, 1, -1, 1),
+                new Vector4(-1, -1, 1, 1),
+                new Vector4(1, -1, 1, 1),
+                new Vector4(1, 1, 1, 1),
+                new Vector4(-1, 1, 1, 1),
+                new Vector4(-1, -1, -1, -1),
+                new Vector4(1, -1, -1, -1),
+                new Vector4(1, 1, -1, -1),
+                new Vector4(-1, 1, -1, -1),
+                new Vector4(-1, -1, 1, -1),
+                new Vector4(1, -1, 1, -1),
+                new Vector4(1, 1, 1, -1),
+                new Vector4(-1, 1, 1, -1),
             };
 
             screenOffset = renderWidth / 2f;
 
-            secondDegree = new Random().Next(1, 360);
+            secondDegree = MathHelper.GlobalRandom().Next(1, 360 + 1);
         }
 
         protected override bool completedRun()
@@ -55,22 +57,21 @@ namespace LEDPiLib.Modules
         protected override Image<Rgba32> RunInternal()
         {
             List<Vector3D> projected3d = new List<Vector3D>();
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
-            foreach (Vector4D point in points)
+            foreach (Vector4 point in points)
             {
-                Mat4x4 rotationXY = new Mat4x4(new Matrix4x4(Convert.ToSingle(Math.Cos(angle)), -Convert.ToSingle(Math.Sin(angle)), 0, 0, Convert.ToSingle(Math.Sin(angle)), Convert.ToSingle(Math.Cos(angle)), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
-                Mat4x4 rotationZW = new Mat4x4(new Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, Convert.ToSingle(Math.Cos(angle)), -Convert.ToSingle(Math.Sin(angle)), 0, 0, Convert.ToSingle(Math.Sin(angle)), Convert.ToSingle(Math.Cos(angle))));
-                Mat4x4 rotationRandom = new Mat4x4(new Matrix4x4(1, 0, 0, 0, 0, 0, Convert.ToSingle(Math.Cos(secondDegree)), -Convert.ToSingle(Math.Sin(secondDegree)), 0, 0, Convert.ToSingle(Math.Sin(secondDegree)), Convert.ToSingle(Math.Cos(secondDegree)), 0, 1, 0, 0));
+                Mat4x4 rotationXY = new Mat4x4(new Matrix4x4((float)Math.Cos(angle), (float)-Math.Sin(angle), 0, 0, (float)Math.Sin(angle), (float)Math.Cos(angle), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
+                Mat4x4 rotationZW = new Mat4x4(new Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, (float)Math.Cos(angle), (float)-Math.Sin(angle), 0, 0, (float)Math.Sin(angle), (float)Math.Cos(angle)));
+                Mat4x4 rotationRandom = new Mat4x4(new Matrix4x4(1, 0, 0, 0, 0, 0, (float)Math.Cos(secondDegree), (float)-Math.Sin(secondDegree), 0, 0, (float)Math.Sin(secondDegree), (float)Math.Cos(secondDegree), 0, 1, 0, 0));
 
-                Vector4D rotated = point;
+                Vector4 rotated = point;
                 rotated = Mat4x4.MatMul(rotationRandom, rotated);
                 rotated = Mat4x4.MatMul(rotationZW, rotated);
                 rotated = Mat4x4.MatMul(rotationXY, rotated);
 
                 float distance = 2;
-                float w = 1 / (distance - rotated.vector.W);
+                float w = 1 / (distance - rotated.W);
 
                 Mat4x4 projection = new Mat4x4(new Matrix4x4(w, 0, 0, 0, 0, w, 0, 0, 0, 0, w, 0, 0, 0, 0, 0));
 
@@ -110,10 +111,10 @@ namespace LEDPiLib.Modules
             return image;
         }
 
-        private void connect(Image<Rgba32> image, int offset, int i, int j, List<Vector3D> points)
+        private void connect(Image<Rgba32> image, int offset, int i, int j, List<Vector3D> localPoints)
         {
-            Vector3D a = points[i + offset];
-            Vector3D b = points[j + offset];
+            Vector3D a = localPoints[i + offset];
+            Vector3D b = localPoints[j + offset];
             
             image.Mutate(c => c.DrawLines(Color.White, 1f, new PointF[]{new PointF(a.vector.X, a.vector.Y), new PointF(b.vector.X, b.vector.Y) }));
         }

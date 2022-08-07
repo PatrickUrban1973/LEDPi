@@ -1,6 +1,5 @@
 ﻿using LEDPiLib.Modules.Helper;
 using SixLabors.ImageSharp;
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -10,14 +9,14 @@ namespace LEDPiLib.Modules.Model.Pong
     {
         private Dictionary<int, Rectangle> digitPoints = new Dictionary<int, Rectangle>();
 
-        public Digit(Vector2D pos)
+        public Digit(Vector2 pos)
         {
             int index = 0;
             for(int y = 0; y < 10; y+=2)
             {
                 for(int x = 0; x < 6; x+=2)
                 {
-                    digitPoints.Add(index++, new Rectangle(new Vector2D(pos.vector.X + x, pos.vector.Y + y), new Vector2D(1,1), Color.White));
+                    digitPoints.Add(index++, new Rectangle(new Vector2(pos.X + x, pos.Y + y), new Vector2(1,1), Color.White));
                 }
             }
         }

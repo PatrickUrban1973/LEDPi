@@ -1,6 +1,5 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using System;
 using System.Collections.Generic;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
@@ -11,12 +10,11 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.WaterRipple)]
     public class LEDWaterRippleModule : ModuleBase
     {
-        private Dictionary<int, Dictionary<int, float>> buffer1 = new Dictionary<int, Dictionary<int, float>>();
-        private Dictionary<int, Dictionary<int, float>> buffer2 = new Dictionary<int, Dictionary<int, float>>();
+        private readonly Dictionary<int, Dictionary<int, float>> buffer1 = new Dictionary<int, Dictionary<int, float>>();
+        private readonly Dictionary<int, Dictionary<int, float>> buffer2 = new Dictionary<int, Dictionary<int, float>>();
 
-        private float dumplining = 0.9f;
-        private Random random = new Random();
-        private int counter = 0;
+        private readonly float dumplining = 0.9f;
+        private int counter;
 
         public LEDWaterRippleModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f)
         {
@@ -31,8 +29,7 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
             if (counter == 0)
             {
@@ -60,18 +57,21 @@ namespace LEDPiLib.Modules
                 }
             }
 
-            for (int y = 0; y < renderHeight; y++)
+            image.ProcessPixelRows(accessor =>
             {
-                var row = image.GetPixelRowSpan(y);
-
-                for (int x = 0; x < renderWidth; x++)
+                for (int y = 0; y < renderHeight; y++)
                 {
-                    float color = buffer2[y][x];
+                    var row = accessor.GetRowSpan(y);
 
-                    row[x] = new Rgba32(color, color, color);
-                    buffer1[y][x] = buffer2[y][x];
+                    for (int x = 0; x < renderWidth; x++)
+                    {
+                        float color = buffer2[y][x];
+
+                        row[x] = new Rgba32(color, color, color);
+                        buffer1[y][x] = buffer2[y][x];
+                    }
                 }
-            }
+            });
 
             counter--;
             return image;
@@ -94,7 +94,7 @@ namespace LEDPiLib.Modules
         {
             for(int i = 0; i < drops; i++)
             {
-                buffer1[random.Next(1, renderHeight - 1)][random.Next(1, renderWidth - 1)] = 255;
+                buffer1[MathHelper.GlobalRandom().Next(1, renderHeight)][MathHelper.GlobalRandom().Next(1, renderWidth)] = 255;
             }
         }
     }

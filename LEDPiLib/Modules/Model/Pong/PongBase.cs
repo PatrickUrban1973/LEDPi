@@ -1,24 +1,23 @@
-﻿using LEDPiLib.Modules.Helper;
+﻿using System.Numerics;
+using LEDPiLib.Modules.Helper;
+using LEDPiLib.Modules.Model.Common;
 using SixLabors.ImageSharp;
 
 namespace LEDPiLib.Modules.Model.Pong
 {
-    abstract class PongBase
+    abstract class PongBase : DrawObjectBase
     {
         protected Rectangle rectangle;
-        protected Vector2D maxBounds;
 
-        public PongBase(Vector2D pos, Vector2D size, Vector2D maxBounds)
+        protected PongBase(Vector2 pos, Vector2 size, Vector2 maxBounds):base(pos, maxBounds)
         {
-            this.rectangle = new Rectangle(pos, size, Color.White);
-            this.maxBounds = maxBounds;
+            rectangle = new Rectangle(position, size, Color.White);
         }
-
-        public void Draw(LEDEngine3D engine3D)
+        
+        public override void Draw(LEDEngine3D engine3D)
         {
             engine3D.DrawFilledRectangle(rectangle);
         }
-
-        public abstract void Move();
+        
     }
 }

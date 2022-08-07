@@ -22,7 +22,17 @@ namespace LEDPiLib.Modules
         {
             stopwatch = new Stopwatch();
             stopwatch.Start();
-            timeSpan = new TimeSpan(0, 0, 0, Convert.ToInt32(moduleConfiguration.Parameter));
+
+            if (moduleConfiguration.Duration > 0)
+            {
+                timeSpan = new TimeSpan(0, 0, moduleConfiguration.Duration);
+            }
+            else
+            {
+                DateTime configurationTime = DateTime.ParseExact(moduleConfiguration.Parameter, "yyyy-MM-dd HH:mm:ss",
+                                           System.Globalization.CultureInfo.InvariantCulture);
+                timeSpan = configurationTime - DateTime.Now;
+            }
         }
 
         protected override bool completedRun()
@@ -36,17 +46,14 @@ namespace LEDPiLib.Modules
             string displayText;
 
             Color color = Color.White;
-            FontFamily fo;
 
-            SystemFonts.TryFind("Times New Roman", out fo);
+            SystemFonts.TryGet("Times New Roman", out var fo);
             Font font = new Font(fo, 20, FontStyle.Regular);
 
             if (countDownSpan.TotalSeconds > 11)
             {
                 font = new Font(fo, 20, FontStyle.Regular);
                 string hours = string.Empty;
-                string minutes = string.Empty;
-                string seconds = string.Empty;
 
                 if (countDownSpan.Hours > 0)
                 {
@@ -54,10 +61,10 @@ namespace LEDPiLib.Modules
                     hours = hours.Substring(hours.Length - 2) + ":";
                 }
 
-                minutes = "0" + countDownSpan.Minutes.ToString();
+                string minutes = "0" + countDownSpan.Minutes.ToString();
                 minutes = minutes.Substring(minutes.Length - 2) + ":";
 
-                seconds = "0" + countDownSpan.Seconds.ToString();
+                string seconds = "0" + countDownSpan.Seconds.ToString();
                 seconds = seconds.Substring(seconds.Length - 2);
 
                 displayText = hours + minutes + seconds;
@@ -75,11 +82,9 @@ namespace LEDPiLib.Modules
 
             FontRectangle size = TextMeasurer.Measure(
                 displayText,
-                new RendererOptions(font));
+                new TextOptions(font));
 
-            image = new Image<Rgba32>(LEDWidth, LEDHeight);
-
-            SetBackgroundColor(image);
+            image = GetNewImage();
 
             image.Mutate(c =>
                 c.DrawText(

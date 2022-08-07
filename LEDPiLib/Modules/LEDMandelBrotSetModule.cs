@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using LEDPiLib.DataItems;
-using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Helper;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using static LEDPiLib.LEDPIProcessorBase;
@@ -13,38 +14,48 @@ namespace LEDPiLib.Modules
     public class LEDMandelbrotSetModule : LEDEngine3DModuleBase
     {
         // Maximum number of iterations:
-        int maxIt = 0;
-        int[] maxIts = new[] { 250, 500, 1000, 2000, 4000, 8000, 16000, 32000 };
+        int maxIt = 1250;
 
-        private static readonly List<List<Vector2D>> startPositions = new List<List<Vector2D>>()
+        private static readonly List<List<Vector2>> startPositions = new List<List<Vector2>>()
         {
-            new List<Vector2D>(){new Vector2D(-2.45001f, -1.74958f), new Vector2D(-2.45001f + 3f, -1.74958f + 3f)},
-            new List<Vector2D>(){new Vector2D(0.004262943452388759f, -0.8573139509059547f), new Vector2D(0.02764703388273181f, -0.8397266853043609f) },
-            new List<Vector2D>(){new Vector2D(-1.8117365482139756f, -0.03578317143893926f), new Vector2D(-1.7350283152532877f, 0.02322876542393005f) },
-            new List<Vector2D>(){new Vector2D(-1.8642935976039046f, -0.038465499230750225f), new Vector2D(-1.70746920437141f, 0.07492689029625492f) },
-            new List<Vector2D>(){new Vector2D(-2.812041983604565f, -1.0296090520405379f), new Vector2D(1.6876367405584882f, 2.3152433501860856f) },
+            new List<Vector2>(){new Vector2(-2.45001f, -1.74958f), new Vector2(-2.45001f + 3f, -1.74958f + 3f)},
+            new List<Vector2>(){new Vector2(0.004262943452388759f, -0.8573139509059547f), new Vector2(0.02764703388273181f, -0.8397266853043609f) },
+            new List<Vector2>(){new Vector2(-1.8117365482139756f, -0.03578317143893926f), new Vector2(-1.7350283152532877f, 0.02322876542393005f) },
+            new List<Vector2>(){new Vector2(-1.8642935976039046f, -0.038465499230750225f), new Vector2(-1.70746920437141f, 0.07492689029625492f) },
+            new List<Vector2>(){new Vector2(-2.812041983604565f, -1.0296090520405379f), new Vector2(1.6876367405584882f, 2.3152433501860856f) },
         };
         
-        double scale;
-        double posX1;
-        double posX2;
-        double posY1;
-        double posY2;
+        private double scale;
+        private double posX1;
+        private double posX2;
+        private double posY1;
+        private double posY2;
 
+        private readonly Dictionary<int, Dictionary<int, double>> mapIteration = new Dictionary<int, Dictionary<int, double>>();
 
-        private bool useCamera = false;
+        private readonly bool useCamera;
 
-        public LEDMandelbrotSetModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2.5f, 30)
+        public LEDMandelbrotSetModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1.75f, 30)
         {
             useCamera = true; // moduleConfiguration.OneTime;
 
-            int startPosition = new Random().Next(0, startPositions.Count - 1);
-            posX1 = startPositions[startPosition].First().vector.X;
-            posY1 = startPositions[startPosition].First().vector.Y;
-            posX2 = startPositions[startPosition].Last().vector.X;
-            posY2 = startPositions[startPosition].Last().vector.Y;
+            int startPosition = MathHelper.GlobalRandom().Next(0, startPositions.Count);
+            posX1 = startPositions[startPosition].First().X;
+            posY1 = startPositions[startPosition].First().Y;
+            posX2 = startPositions[startPosition].Last().X;
+            posY2 = startPositions[startPosition].Last().Y;
 
             scale = (posX2 - posX1) / renderWidth;
+            
+            for (var y = 0; y < renderHeight; ++y)
+            {
+                Dictionary<int, double> subMap = new Dictionary<int, double>();
+                mapIteration.Add(y, subMap);
+                for (var x = 0; x < renderWidth; ++x)
+                {
+                    subMap.Add(x, 0);
+                }
+            }
         }
 
         protected override bool completedRun()
@@ -55,51 +66,52 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            image = new Image<Rgba32>(renderWidth, renderHeight);
-
-            // Mandelbrot and Julia sets always have their
-            // minimum along the edge of the field, so there
-            // is a much smaller area to search.
-            double minIt = maxIts[maxIt];
-
-            for (var x = 0; x < renderWidth; ++x)
-            {
-                var it1 = iterate(x, 0);
-                var it2 = iterate(x, renderHeight - 1);
-                minIt = Math.Min(minIt, Math.Min(it1, it2));
-            }
+            image = GetNewImage();
+            
+            double minIt = maxIt;
 
             for (var y = 0; y < renderHeight; ++y)
             {
-                var it1 = iterate(0, y);
-                var it2 = iterate(renderWidth - 1, y);
-                minIt = Math.Min(minIt, Math.Min(it1, it2));
+                Dictionary<int, double> rowMap = mapIteration[y];
+
+                for (var x = 0; x < renderWidth; ++x)
+                {
+
+                    var it1 = iterate(x, y);
+                    rowMap[x] = it1;
+                    minIt = Math.Min(minIt, it1);
+                }
             }
 
             --minIt;
 
             // Draw fractal:
-            for (var y = 0; y < renderHeight; ++y)
+            image.ProcessPixelRows(accessor =>
             {
-                var row = image.GetPixelRowSpan(y);
-
-                for (var x = 0; x < renderWidth; ++x)
+                for (var y = 0; y < renderHeight; ++y)
                 {
-                    var it = iterate(x, y);
-                    //var index = 4 * (x + y * width);
+                    var row = accessor.GetRowSpan(y);
 
-                    if (it < maxIts[maxIt])
+                    for (var x = 0; x < renderWidth; ++x)
                     {
-                        double colour = Math.Floor(255.0 * Math.Log(it - minIt) / Math.Log(maxIts[maxIt] - minIt));
+                        var it = mapIteration[y][x];
 
-                        row[x] = Colors[Convert.ToInt32(colour)];
-                    }
-                    else
-                    {
-                        row[x] = Color.Black;
+                        if (it < maxIt)
+                        {
+                            double color = 0;
+                            if (Math.Abs(it - minIt) > 0)
+                            {
+                                color = Math.Floor(255.0 * Math.Log(it - minIt) / Math.Log(maxIt - minIt));
+                            }
+                            row[x] = Colors[(int) color];
+                        }
+                        else
+                        {
+                            row[x] = Color.Black;
+                        }
                     }
                 }
-            }
+            });
 
             if (useCamera)
             {
@@ -125,24 +137,13 @@ namespace LEDPiLib.Modules
             double j = 0.0f;
 			double it = 0;
 
-            while (i * i + j * j <= 4.0f && it < maxIts[maxIt])
+            while (i * i + j * j <= 4.0f && it < maxIt)
             {
                 var i2 = i * i - j * j + x0;
                 j = 2.0f * i * j + y0;
                 i = i2;
                 ++it;
             }
-
-            //for (var k = 0; k < 3; ++k)
-            //{
-            //    var i2 = i * i - j * j + x0;
-            //    j = 2.0 * i * j + y0;
-            //    i = i2;
-            //    ++it;
-            //}
-
-            //it += 1.0 - Math.Log(Math.Log(Math.Sqrt(i * i + j * j))) / Math.Log(2.0);
-            ////it += 2 - Math.Log(i * i + j * j) / Math.Log(2);
 
             return it;
 		}

@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using LEDPiLib.DataItems;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using SixLabors.ImageSharp.Processing;
@@ -13,25 +12,42 @@ namespace LEDPiLib.Modules
 {
     public abstract class ModuleBase
     {
-        private static List<ModuleBase> _breakingNews = new List<ModuleBase>();
+        private struct ModuleTask
+        {
+            public ModuleTask(int order, ModuleBase moduleBase)
+            {
+                Order = order;
+                ModuleBase = moduleBase;
+            }
 
-        private Stopwatch _stopwatchDuration = new Stopwatch();
-        private static Stopwatch _stopwatchBreakingNews = new Stopwatch();
-        protected bool _oneTime;
+            public readonly int Order;
+            public readonly ModuleBase ModuleBase;
+        }
+
+        private static readonly Image<Rgba32>[] images = new Image<Rgba32>[7];
+
+        private static readonly List<ModuleBase> _breakingNews = new List<ModuleBase>();
+
+        private readonly Stopwatch _stopwatchDuration = new Stopwatch();
+        private static readonly Stopwatch _stopwatchBreakingNews = new Stopwatch();
+        private readonly bool _oneTime;
         private TimeSpan _duration;
         private bool isStarted;
-        private List<ModuleBase> _layerModules = new List<ModuleBase>();
-        private static Rgba32 transparentPixel = LEDPIProcessorBase.TransparentBackgroundColor.ToPixel<Rgba32>();
+        private readonly List<ModuleBase> _layerModules = new List<ModuleBase>();
+        private static readonly Rgba32 transparentPixel = LEDPIProcessorBase.TransparentBackgroundColor.ToPixel<Rgba32>();
 
-        protected readonly float renderOffset = 1f;
-        private readonly int handBrake = 0;
+        protected readonly float renderOffset;
+        private readonly int handBrake;
         
-        protected int renderWidth;
-        protected int renderHeight;
+        protected readonly int renderWidth;
+        protected readonly int renderHeight;
 
-        private Stopwatch stopwatchHandBrake = new Stopwatch();
+        private readonly Stopwatch stopwatchHandBrake = new Stopwatch();
+        private Image<Rgba32> lastImage;
+        private static int taskCounter;
+        private static readonly object lockObject = new object();
 
-        public ModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset = 1f, int handBrake = 0)
+        protected ModuleBase(ModuleConfiguration moduleConfiguration, float renderOffset = 1f, int handBrake = 0)
         {
             this.renderOffset = renderOffset;
             this.handBrake = handBrake;
@@ -53,6 +69,8 @@ namespace LEDPiLib.Modules
 
             if (handBrake > 0 || !IsLayer)
                 stopwatchHandBrake.Start();
+
+            lastImage = new Image<Rgba32>(renderWidth, renderHeight);
         }
 
         public static void AddBreakingNews(ModuleBase moduleBase)
@@ -70,17 +88,55 @@ namespace LEDPiLib.Modules
             _layerModules.Add(moduleBase);
         }
 
-        public bool IsRunning { get; set; } = true;
-
-        public bool Pausing { get; set; } = false;
-
-        public bool IsLayer { get; set; } = false;
-
-        protected void SetBackgroundColor(Image<Rgba32> image)
+        protected void UseBlend(Image<Rgba32> image, float blendFactor)
         {
-            image.Mutate(c => c.BackgroundColor(IsLayer ? LEDPIProcessorBase.TransparentBackgroundColor : LEDPIProcessorBase.BlackBackgroundColor));
+            image.Mutate(c => c.DrawImage(lastImage, new GraphicsOptions() { BlendPercentage = blendFactor, ColorBlendingMode = PixelColorBlendingMode.Screen, AlphaCompositionMode = PixelAlphaCompositionMode.DestOver}));
         }
 
+        protected void SetLastPictureBlend(Image<Rgba32> image)
+        {
+            lastImage = image.Clone();
+            ThreadPool.QueueUserWorkItem(RemoveDirtyPixelsWaitCallback);
+        }
+
+        private void RemoveDirtyPixelsWaitCallback(Object stateInfo)
+        {
+            lastImage.ProcessPixelRows(accessor =>
+            {
+                for(int i = 0; i < lastImage.Height; i++)
+                {
+                    var row = accessor.GetRowSpan(i);
+
+                    for(int y = 0; y < lastImage.Width; y++)
+                    {
+                        var pixel = row[y];
+
+                        int checkValue = pixel.R + pixel.G + pixel.B;
+
+                        if (checkValue > 0 && checkValue <= 9)
+                            row[y] = LEDPIProcessorBase.BlackBackgroundColor;
+                    }
+
+                }
+            });
+        }
+
+        public bool IsRunning { get; private set; } = true;
+
+        public bool Pausing { get; set; }
+
+        protected bool IsLayer { get; set; }
+
+        protected Image<Rgba32> GetNewImage()
+        {
+            return new Image<Rgba32>(renderWidth, renderHeight, GetBackground());
+        }
+
+        protected Color GetBackground()
+        {
+            return IsLayer ? LEDPIProcessorBase.TransparentBackgroundColor : LEDPIProcessorBase.BlackBackgroundColor;
+        }
+        
         protected virtual bool completedRun()
         {
             return _oneTime && isStarted;
@@ -92,62 +148,74 @@ namespace LEDPiLib.Modules
             {
                 while (Pausing)
                 {
-                    Thread.Sleep(new TimeSpan(0, 0, 0, 1));
+                    Thread.Sleep(1);
                 }
 
-                List<Task<Image<Rgba32>>> taskList = new List<Task<Image<Rgba32>>>();
-                Image <Rgba32> image;
+                //await all task before start again (new start of a module) 
+                while (taskCounter != 0)
+                    Thread.Sleep(1);
 
-                taskList.Add(Task<Image<Rgba32>>.Run(Run));
+                int counter = 0;
+
+                counter = addToThreadPool(counter, this);
 
                 foreach(ModuleBase layerModule in _layerModules)
                 {
-                    taskList.Add(Task<Image<Rgba32>>.Run(layerModule.Run));
+                    counter = addToThreadPool(counter, layerModule);
                 }
 
-                foreach (ModuleBase breakingNews in _breakingNews)
+                lock (_breakingNews)
                 {
-                    taskList.Add(Task<Image<Rgba32>>.Run(breakingNews.Run));
-                }
-
-                Task.WaitAll(taskList.ToArray());
-
-                Task<Image<Rgba32>> task = taskList.First();
-
-                image = task.Result;
-                taskList.Remove(task);
-
-                foreach(Task<Image<Rgba32>> nextTask in taskList)
-                {
-                    Image<Rgba32> nextLayer = nextTask.Result;
-
-                    for(int y = 0; y < LEDPIProcessorBase.LEDHeight; y++)
+                    foreach (ModuleBase breakingNews in _breakingNews)
                     {
-                        for(int x = 0; x < LEDPIProcessorBase.LEDWidth; x++)
-                        {
-                            Rgba32 nextPixel = nextLayer.GetPixelRowSpan(y)[x];
+                        counter = addToThreadPool(counter, breakingNews);
+                    }
+                }
 
-                            if (!nextPixel.Equals(transparentPixel))
+                while (taskCounter != 0)
+                    Thread.Sleep(1);
+
+                Image<Rgba32> image = images[0];
+                for(int i = 1; i < counter; i++)
+                {
+                    Image<Rgba32> nextLayer = images[i];
+                    nextLayer.ProcessPixelRows(image, (sourceAccessor, targetAccessor) =>
+                    {
+                        for (int y = 0; y < LEDPIProcessorBase.LEDHeight; y++)
+                        {
+                            for (int x = 0; x < LEDPIProcessorBase.LEDWidth; x++)
                             {
-                                nextPixel.A = Byte.MaxValue;
-                                image.GetPixelRowSpan(y)[x] = nextPixel;
+                                Rgba32 nextPixel = sourceAccessor.GetRowSpan(y)[x];
+
+                                if (!nextPixel.Equals(transparentPixel))
+                                {
+                                    ref Rgba32 canvasPixel = ref targetAccessor.GetRowSpan(y)[x];
+
+                                    canvasPixel.R = nextPixel.R;
+                                    canvasPixel.G = nextPixel.G;
+                                    canvasPixel.B = nextPixel.B;    
+                                    canvasPixel.A = nextPixel.A;
+                                }
                             }
                         }
-                    }
+                    });
                 }
 
                 if ((isStarted && _stopwatchDuration.Elapsed > _duration) || completedRun())
                     IsRunning = false;
 
-                for(int i = _breakingNews.Count - 1; i >= 0; i--)
+                lock (_breakingNews)
                 {
-                    if (_stopwatchBreakingNews.Elapsed > _breakingNews[i]._duration)
+                    for(int i = _breakingNews.Count - 1; i >= 0; i--)
                     {
-                        lock(_breakingNews)
+                        if (_stopwatchBreakingNews.Elapsed > _breakingNews[i]._duration)
                         {
-                            _breakingNews.RemoveAt(i);
+                            lock(_breakingNews)
+                            {
+                                _breakingNews.RemoveAt(i);
+                            }
+                            _stopwatchBreakingNews.Stop();
                         }
-                        _stopwatchBreakingNews.Stop();
                     }
                 }
 
@@ -164,6 +232,16 @@ namespace LEDPiLib.Modules
                     _stopwatchDuration.Restart();
 
                 isStarted = true;
+            }
+        }
+
+        private int addToThreadPool(int counter, ModuleBase moduleBase)
+        {
+            lock (lockObject)
+            {
+                taskCounter++;
+                ThreadPool.QueueUserWorkItem(ThreadProc, new ModuleTask(counter++, moduleBase));
+                return counter;
             }
         }
 
@@ -189,7 +267,17 @@ namespace LEDPiLib.Modules
             return image;
         }
 
-        abstract protected Image<Rgba32> RunInternal();
+        protected abstract Image<Rgba32> RunInternal();
+
+        private static void ThreadProc(Object stateInfo)
+        {
+            lock (lockObject)
+            {
+                ModuleTask task = (ModuleTask)stateInfo;
+                images[task.Order] = task.ModuleBase.Run();
+                taskCounter--;
+            }
+        }
 
         public void Stop()
         {

@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 
-namespace LEDPiLib.Modules.Model
+namespace LEDPiLib.Modules.Model.Fluid
 {
-    class Fluid
+    internal class Fluid
     {
         public static int IX(int x, int y)
         {
@@ -11,86 +12,84 @@ namespace LEDPiLib.Modules.Model
             return x + (y * N);
         }
 
-        const int iter = 16;
-        static int N;
-        int size;
-        float dt;
-        float diff;
-        float visc;
+        private const int iter = 16;
+        private static int N;
+        private readonly float dt;
+        private readonly float diff;
+        private readonly float visc;
 
-        float[] s;
-        public float[] density;
+        private readonly float[] s;
+        public readonly float[] density;
 
-        float[] Vx;
-        float[] Vy;
+        private readonly float[] Vx;
+        private readonly float[] Vy;
 
-        float[] Vx0;
-        float[] Vy0;
+        private readonly float[] Vx0;
+        private readonly float[] Vy0;
 
-        public Fluid(int n, float dt, float diffusion, float viscosity)
+        public Fluid(int n, float localDt, float diffusion, float viscosity)
         {
             N = n;
-            this.size = N;
-            this.dt = dt;
-            this.diff = diffusion;
-            this.visc = viscosity;
+            dt = localDt;
+            diff = diffusion;
+            visc = viscosity;
 
-            this.s = new float[N * N];
-            this.density = new float[N * N];
+            s = new float[N * N];
+            density = new float[N * N];
 
-            this.Vx = new float[N * N];
-            this.Vy = new float[N * N];
+            Vx = new float[N * N];
+            Vy = new float[N * N];
 
-            this.Vx0 = new float[N * N];
-            this.Vy0 = new float[N * N];
+            Vx0 = new float[N * N];
+            Vy0 = new float[N * N];
         }
 
         public void step()
         {
-            float visc = this.visc;
-            float diff = this.diff;
-            float dt = this.dt;
-            float[] Vx = this.Vx;
-            float[] Vy = this.Vy;
-            float[] Vx0 = this.Vx0;
-            float[] Vy0 = this.Vy0;
-            float[] s = this.s;
-            float[] density = this.density;
+            float localVisc = this.visc;
+            float localDiff = this.diff;
+            float localDt = dt;
+            float[] localVx = Vx;
+            float[] localVy = Vy;
+            float[] localVx0 = Vx0;
+            float[] localVy0 = Vy0;
+            float[] localS = s;
+            float[] localDensity = density;
 
-            diffuse(1, Vx0, Vx, visc, dt);
-            diffuse(2, Vy0, Vy, visc, dt);
+            diffuse(1, localVx0, localVx, localVisc, localDt);
+            diffuse(2, localVy0, localVy, localVisc, localDt);
 
-            project(Vx0, Vy0, Vx, Vy);
+            project(localVx0, localVy0, localVx, localVy);
 
-            advect(1, Vx, Vx0, Vx0, Vy0, dt);
-            advect(2, Vy, Vy0, Vx0, Vy0, dt);
+            advect(1, localVx, localVx0, localVx0, localVy0, localDt);
+            advect(2, localVy, localVy0, localVx0, localVy0, localDt);
 
-            project(Vx, Vy, Vx0, Vy0);
+            project(localVx, localVy, localVx0, localVy0);
 
-            diffuse(0, s, density, diff, dt);
-            advect(0, density, s, Vx, Vy, dt);
+            diffuse(0, localS, localDensity, localDiff, localDt);
+            advect(0, localDensity, localS, localVx, localVy, localDt);
         }
 
         public void addDensity(int x, int y, float amount)
         {
             int index = IX(x, y);
-            this.density[index] += amount;
+            density[index] += amount;
         }
 
         public void addVelocity(int x, int y, float amountX, float amountY)
         {
             int index = IX(x, y);
-            this.Vx[index] += amountX;
-            this.Vy[index] += amountY;
+            Vx[index] += amountX;
+            Vy[index] += amountY;
         }
 
-        void diffuse(int b, float[] x, float[] x0, float diff, float dt)
+        private void diffuse(int b, float[] x, float[] x0, float localDiff, float localDt)
         {
-            float a = dt * diff * (N - 2) * (N - 2);
+            float a = localDt * localDiff * (N - 2) * (N - 2);
             lin_solve(b, x, x0, a, 1 + 4 * a);
         }
 
-        void lin_solve(int b, float[] x, float[] x0, float a, float c)
+        private void lin_solve(int b, float[] x, float[] x0, float a, float c)
         {
             float cRecip = 1.0f / c;
             for (int k = 0; k < iter; k++)
@@ -112,7 +111,7 @@ namespace LEDPiLib.Modules.Model
                 set_bnd(b, x);
             }
         }
-        void project(float[] velocX, float[] velocY, float[] p, float[] div)
+        private void project(float[] velocX, float[] velocY, float[] p, float[] div)
         {
             for (int j = 1; j < N - 1; j++)
             {
@@ -147,42 +146,39 @@ namespace LEDPiLib.Modules.Model
         }
 
 
-        void advect(int b, float[] d, float[] d0, float[] velocX, float[] velocY, float dt)
+        private void advect(int b, float[] d, IReadOnlyList<float> d0, IReadOnlyList<float> velocX, IReadOnlyList<float> velocY, float localDt)
         {
-            float i0, i1, j0, j1;
-
-            float dtx = dt * (N - 2);
-            float dty = dt * (N - 2);
-
-            float s0, s1, t0, t1;
-            float tmp1, tmp2, x, y;
+            float dtx = localDt * (N - 2);
+            float dty = localDt * (N - 2);
 
             float Nfloat = N;
-            float ifloat, jfloat;
-            int i, j;
+            int j;
 
+            float jfloat, ifloat;
+            
             for (j = 1, jfloat = 1; j < N - 1; j++, jfloat++)
             {
+                int i;
                 for (i = 1, ifloat = 1; i < N - 1; i++, ifloat++)
                 {
-                    tmp1 = dtx * velocX[IX(i, j)];
-                    tmp2 = dty * velocY[IX(i, j)];
-                    x = ifloat - tmp1;
-                    y = jfloat - tmp2;
+                    float tmp1 = dtx * velocX[IX(i, j)];
+                    float tmp2 = dty * velocY[IX(i, j)];
+                    float x = ifloat - tmp1;
+                    float y = jfloat - tmp2;
 
                     if (x < 0.5f) x = 0.5f;
                     if (x > Nfloat + 0.5f) x = Nfloat + 0.5f;
-                    i0 = Convert.ToSingle(Math.Floor(x));
-                    i1 = i0 + 1.0f;
+                    float i0 = (float)Math.Floor(x);
+                    float i1 = i0 + 1.0f;
                     if (y < 0.5f) y = 0.5f;
                     if (y > Nfloat + 0.5f) y = Nfloat + 0.5f;
-                    j0 = Convert.ToSingle(Math.Floor(y));
-                    j1 = j0 + 1.0f;
+                    float j0 = (float)Math.Floor(y);
+                    float j1 = j0 + 1.0f;
 
-                    s1 = x - i0;
-                    s0 = 1.0f - s1;
-                    t1 = y - j0;
-                    t0 = 1.0f - t1;
+                    float s1 = x - i0;
+                    float s0 = 1.0f - s1;
+                    float t1 = y - j0;
+                    float t0 = 1.0f - t1;
 
                     int i0i = Convert.ToInt32(i0);
                     int i1i = Convert.ToInt32(i1);

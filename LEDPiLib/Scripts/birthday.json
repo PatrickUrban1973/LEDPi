@@ -2,14 +2,14 @@
   "ModuleConfigurations": [
     {
       "Module": 28,
-      "Parameter": "",
+      "Parameter": "3",
       "OneTime": false,
       "Duration": 0,
       "CronTime": null,
       "SubConfigurations": [
         {
           "Module": 4,
-          "Parameter": "Happy Birthday Simon!!!",
+          "Parameter": "Happy Birthday Luisa!!!",
           "OneTime": false,
           "Duration": 0,
           "CronTime": null,

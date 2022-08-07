@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
+﻿using System.Numerics;
 
-namespace LEDPiLib.Modules.Model
+namespace LEDPiLib.Modules.Model.Common
 {
     public struct Vector3D
     {
         public Vector3 vector;
         public float W;
 
-        public Vector3D(Vector3 vector, float w = 1)
+        private Vector3D(Vector3 vector, float w = 1)
         {
             this.vector = vector;
             W = w;
@@ -50,20 +47,6 @@ namespace LEDPiLib.Modules.Model
         public static Vector3D operator /(Vector3D v1, float k)
         {
             return new Vector3D(v1.vector / k);
-        }
-
-        public Vector3D Sub(float f, bool allowNegativ = true)
-        {
-            Vector3D ret = new Vector3D(this.vector.X - f, this.vector.Z - f, this.vector.Z - f);
-
-            if (!allowNegativ)
-            {
-                if (ret.vector.X < 0) ret.vector.X = 0;
-                if (ret.vector.Y < 0) ret.vector.Y = 0;
-                if (ret.vector.Z < 0) ret.vector.Z = 0;
-            }
-
-            return ret;
         }
 
         internal float Length()

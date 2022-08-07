@@ -1,6 +1,5 @@
 ﻿using System;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -9,12 +8,12 @@ namespace LEDPiLib.Modules.Model.Cloth
 {
     public class Stick
     {
-        public ClothPointBase P0 { get; set; }
-        public ClothPointBase P1 { get; set; }
+        private ClothPointBase P0 { get; set; }
+        private ClothPointBase P1 { get; set; }
 
-        public bool Hidden { get; set; }
+        private bool Hidden { get; set; }
 
-        public float Length { get; set; }
+        private float Length { get; set; }
 
     public Stick(ClothPointBase p0, ClothPointBase p1, float length, bool hidden = false)
         {
@@ -28,7 +27,7 @@ namespace LEDPiLib.Modules.Model.Cloth
         {
             float dx = P1.X - P0.X;
             float dy = P1.Y - P0.Y;
-            float distance = Convert.ToSingle(Math.Sqrt(dx * dx + dy * dy));
+            float distance = (float)Math.Sqrt(dx * dx + dy * dy);
             float difference = Length - distance;
             float percent = difference / distance / 2f;
             float offsetX = dx * percent;

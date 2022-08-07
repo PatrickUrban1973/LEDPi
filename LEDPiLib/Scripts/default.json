@@ -104,6 +104,46 @@
           "Duration": 30,
           "CronTime": null,
           "SubConfigurations": null
+        },
+        {
+          "Module": 34,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+        {
+          "Module": 33,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+        {
+          "Module": 36,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+        {
+          "Module": 37,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
+        },
+        {
+          "Module": 39,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
+          "CronTime": null,
+          "SubConfigurations": null
         }
       ]
     },
@@ -131,6 +171,13 @@
         {
           "Module": 5,
           "Parameter": "/home/pi/LEDPi/Media/Pics/3/",
+          "OneTime": true,
+          "Duration": 0,
+          "CronTime": null
+        },
+        {
+          "Module": 5,
+          "Parameter": "/home/pi/LEDPi/Media/Pics/4/",
           "OneTime": true,
           "Duration": 0,
           "CronTime": null
@@ -195,6 +242,13 @@
           "CronTime": null
         },
         {
+          "Module": 20,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
           "Module": 22,
           "Parameter": null,
           "OneTime": false,
@@ -220,6 +274,34 @@
           "Parameter": null,
           "OneTime": false,
           "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 32,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 35,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 38,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 45,
+          "CronTime": null
+        },
+        {
+          "Module": 40,
+          "Parameter": null,
+          "OneTime": false,
+          "Duration": 30,
           "CronTime": null
         }
       ]

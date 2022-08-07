@@ -1,0 +1,7 @@
+# Blender v2.79 (sub 0) OBJ File: 'axis.blend'
+# www.blender.orgv 0 0 0
+v 0 0 0
+v 0 1 0
+v 1 1 0
+s off
+f 1 2 3

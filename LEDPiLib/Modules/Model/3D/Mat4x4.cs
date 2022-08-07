@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Numerics;
+using LEDPiLib.Modules.Model.Common;
 
 namespace LEDPiLib.Modules.Model
 {
     public struct Mat4x4
     {
-        public Matrix4x4 M;
+        private Matrix4x4 M;
 
         public Mat4x4(Matrix4x4 m)
         {
@@ -13,13 +14,13 @@ namespace LEDPiLib.Modules.Model
 		
         }
 
-        private static Mat4x4 vecToMatrix(Vector4D v)
+        private static Mat4x4 vecToMatrix(Vector4 v)
         {
             Mat4x4 m = new Mat4x4();
-            m.M.M11 = v.vector.X;
-            m.M.M21 = v.vector.Y;
-            m.M.M31 = v.vector.Z;
-            m.M.M41 = v.vector.W;
+            m.M.M11 = v.X;
+            m.M.M21 = v.Y;
+            m.M.M31 = v.Z;
+            m.M.M41 = v.W;
             return m;
         }
 
@@ -28,17 +29,17 @@ namespace LEDPiLib.Modules.Model
             return new Vector3D(m.M.M11, m.M.M21, m.M.M31);
         }
 
-        private static Vector4D matrixToVec4(Mat4x4 m)
+        private static Vector4 matrixToVec4(Mat4x4 m)
         {
-            return new Vector4D(m.M.M11, m.M.M21, m.M.M31, m.M.M41);
+            return new Vector4(m.M.M11, m.M.M21, m.M.M31, m.M.M41);
         }
 
-        public static Vector3D operator *(Mat4x4 m, Vector4D v1)
+        public static Vector3D operator *(Mat4x4 m, Vector4 v1)
         {
             return matrixToVec(m * vecToMatrix(v1));
         }
 
-        public static Vector4D MatMul(Mat4x4 m, Vector4D v1)
+        public static Vector4 MatMul(Mat4x4 m, Vector4 v1)
         {
             return matrixToVec4(m * vecToMatrix(v1));
         }
@@ -83,7 +84,7 @@ namespace LEDPiLib.Modules.Model
 
 		public static Mat4x4 MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 		{
-			float fFovRad = 1.0f / Convert.ToSingle(Math.Tan(fFovDegrees * 0.5f / 180.0f * 3.14159f));
+			float fFovRad = 1.0f / (float)Math.Tan(fFovDegrees * 0.5f / 180.0f * 3.14159f);
 			Mat4x4 matrix = new Mat4x4(new Matrix4x4());
 			matrix.M.M11 = fAspectRatio * fFovRad;
 			matrix.M.M22 = fFovRad;
@@ -96,6 +97,8 @@ namespace LEDPiLib.Modules.Model
 
 		public static Mat4x4 PointAt(Vector3D pos, Vector3D target, Vector3D up)
         {
+
+            //return new Mat4x4(Matrix4x4.CreateLookAt(pos.vector, target.vector, up.vector));
             // Calculate new forward direction
             Vector3D newForward = target - pos;
             newForward = newForward.Normalise();

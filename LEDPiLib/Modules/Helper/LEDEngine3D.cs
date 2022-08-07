@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -10,9 +11,42 @@ namespace LEDPiLib.Modules.Helper
 {
     public class LEDEngine3D
     {
-        public Image<Rgba32> Canvas { get; set; }
+        private Image<Rgba32> canvas;
+        private int width;
+        private int height;
 
-        public Vector3D Vector_IntersectPlane(Vector3D plane_p, Vector3D plane_n, Vector3D lineStart, Vector3D lineEnd, ref float t)
+        private static readonly Color[] greyScaleMap = {
+            Color.Black,
+            Color.DarkGray.WithAlpha(0.25f),
+            Color.DarkGray.WithAlpha(0.5f),
+            Color.DarkGray.WithAlpha(0.75f),
+            Color.DarkGray.WithAlpha(1f),
+            Color.Gray.WithAlpha(0.25f),
+            Color.Gray.WithAlpha(0.5f),
+            Color.Gray.WithAlpha(0.75f),
+            Color.Gray.WithAlpha(1f),
+            Color.White.WithAlpha(0.25f),
+            Color.White.WithAlpha(0.5f),
+            Color.White.WithAlpha(0.75f),
+            Color.White.WithAlpha(1f),
+            Color.Black.WithAlpha(1f),
+        };
+
+        public Image<Rgba32> Canvas
+        {
+            get
+            {
+                return canvas;
+            }
+            set
+            {
+                canvas = value;
+                width = canvas.Width;
+                height = canvas.Height;
+            }
+        }
+
+        private static Vector3D Vector_IntersectPlane(Vector3D plane_p, Vector3D plane_n, Vector3D lineStart, Vector3D lineEnd, ref float t)
 		{
 			plane_n = plane_n.Normalise();
             float plane_d = -(plane_n * plane_p);
@@ -32,60 +66,7 @@ namespace LEDPiLib.Modules.Helper
 
         public Color GetColour(float lum)
         {
-            Color retColor = Color.Black;
-
-            int pixel_bw = (int)MathHelper.Map(lum, 0, 1, 0, 13);
-            switch (pixel_bw)
-            {
-                case 0: retColor = Color.Black; 
-                        break;
-
-                case 1:
-                    retColor = Color.DarkGray.WithAlpha(0.25f);
-					break;
-                case 2:
-                    retColor = Color.DarkGray.WithAlpha(0.5f);
-                    break;
-                case 3:
-                    retColor = Color.DarkGray.WithAlpha(0.75f);
-                    break;
-				case 4:
-                    retColor = Color.DarkGray.WithAlpha(1f);
-                    break;
-
-                case 5:
-                    retColor = Color.Gray.WithAlpha(0.25f);
-                    break;
-                case 6:
-                    retColor = Color.Gray.WithAlpha(0.5f);
-                    break;
-                case 7:
-                    retColor = Color.Gray.WithAlpha(0.75f);
-                    break;
-                case 8:
-                    retColor = Color.Gray.WithAlpha(1f);
-                    break;
-
-                case 9:
-                    retColor = Color.White.WithAlpha(0.25f);
-                    break;
-                case 10:
-                    retColor = Color.White.WithAlpha(0.5f);
-                    break;
-                case 11:
-                    retColor = Color.White.WithAlpha(0.75f);
-                    break;
-                case 12:
-                    retColor = Color.White.WithAlpha(1f);
-                    break;
-
-                default:
-                    retColor = Color.Black.WithAlpha(1f);
-                    break;
-            }
-
-
-            return retColor;
+            return greyScaleMap[(int)MathHelper.Map(lum, 0, 1, 0, 13)];
         }
 
 		public int Triangle_ClipAgainstPlane(Vector3D plane_p, Vector3D plane_n, Triangle in_tri, ref List<Triangle> clipped)
@@ -209,18 +190,26 @@ namespace LEDPiLib.Modules.Helper
             return -1;
         }
 
-        public void DrawLine(Vector2D a, Vector2D b, Color col)
+        public void DrawLines(List<Tuple<Vector2, Vector2>> lines, Color col)
         {
-            Draw(GetLineVectors(a.vector.X, a.vector.Y, b.vector.X, b.vector.Y), col);
+            List<Vector2> points = new List<Vector2>();
+            lines.ForEach(p => points.AddRange(GetLineVectors(p.Item1.X, p.Item1.Y, p.Item2.X, p.Item2.Y)));
+
+            Draw(points, col);
+        }
+
+        public void DrawLine(Vector2 a, Vector2 b, Color col)
+        {
+            Draw(GetLineVectors(a.X, a.Y, b.X, b.Y), col);
         }
 
         public void DrawFilledRectangle(Model.Rectangle rectangle)
         {
             List<Vector2> vectors = new List<Vector2>();
-            int startX = Convert.ToInt32(rectangle.Pos.vector.X);
-            int endX = Convert.ToInt32(rectangle.Pos.vector.X + rectangle.Size.vector.X);
-            int startY = Convert.ToInt32(rectangle.Pos.vector.Y);
-            int endY = Convert.ToInt32(rectangle.Pos.vector.Y + rectangle.Size.vector.Y);
+            int startX = Convert.ToInt32(rectangle.Pos.X);
+            int endX = Convert.ToInt32(rectangle.Pos.X + rectangle.Size.X);
+            int startY = Convert.ToInt32(rectangle.Pos.Y);
+            int endY = Convert.ToInt32(rectangle.Pos.Y + rectangle.Size.Y);
 
             for(int x = startX; x <= endX; x++)
             {
@@ -235,22 +224,22 @@ namespace LEDPiLib.Modules.Helper
 
         public void DrawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, Color col)
         {
-//            Canvas.Mutate(c => c.DrawLines(col, 1f, new PointF[]{new PointF(x1, y1), new PointF(x2, y2), new PointF(x3, y3), }));
             Draw(GetLineVectors(x1, y1, x2, y2).Concat(GetLineVectors(x2, y2, x3, y3)).Concat(GetLineVectors(x3, y3, x1, y1)), col);
         }
 
         public List<Vector2> GetLineVectors(float x1, float y1, float x2, float y2)
         {
             List<Vector2> vectors = new List<Vector2>();
-            float x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
-            dx = x2 - x1;
-            dy = y2 - y1;
-            dx1 = Math.Abs(dx);
-            dy1 = Math.Abs(dy);
-            px = 2 * dy1 - dx1;
-            py = 2 * dx1 - dy1;
+            float x, y;
+            float dx = x2 - x1;
+            float dy = y2 - y1;
+            float dx1 = Math.Abs(dx);
+            float dy1 = Math.Abs(dy);
+            float px = 2 * dy1 - dx1;
+            float py = 2 * dx1 - dy1;
             if (dy1 <= dx1)
             {
+                float xe;                
                 if (dx >= 0)
                 {
                     x = x1;
@@ -264,24 +253,25 @@ namespace LEDPiLib.Modules.Helper
                     xe = x1;
                 }
                 vectors.Add(new Vector2(x,y));
-                for (i = 0; x < xe; i++)
+                while (x < xe)
                 {
-                    x = x + 1;
+                    x++;
                     if (px < 0)
-                        px = px + 2 * dy1;
+                        px += 2 * dy1;
                     else
                     {
                         if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0))
-                            y = y + 1;
+                            y++;
                         else
-                            y = y - 1;
-                        px = px + 2 * (dy1 - dx1);
+                            y--;
+                        px += 2 * (dy1 - dx1);
                     }
                     vectors.Add(new Vector2(x, y));
                 }
             }
             else
             {
+                float ye;
                 if (dy >= 0)
                 {
                     x = x1;
@@ -295,18 +285,18 @@ namespace LEDPiLib.Modules.Helper
                     ye = y1;
                 }
                 vectors.Add(new Vector2(x, y));
-                for (i = 0; y < ye; i++)
+                while (y < ye)
                 {
-                    y = y + 1;
+                    y += 1;
                     if (py <= 0)
-                        py = py + 2 * dx1;
+                        py += 2 * dx1;
                     else
                     {
                         if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0))
-                            x = x + 1;
+                            x++;
                         else
-                            x = x - 1;
-                        py = py + 2 * (dx1 - dy1);
+                            x--;
+                        py += 2 * (dx1 - dy1);
                     }
                     vectors.Add(new Vector2(x, y));
                 }
@@ -326,7 +316,9 @@ namespace LEDPiLib.Modules.Helper
 
             void Swap(ref int tempX, ref int tempY)
             {
-                int t = tempX; tempX = tempY; tempY = t;
+                int t = tempX; 
+                tempX = tempY; 
+                tempY = t;
             }
 
             void Drawline(int sx, int ex, int ny, Color color)
@@ -334,45 +326,53 @@ namespace LEDPiLib.Modules.Helper
                 int realsx = sx;
                 int realex = ex;
 
-                if (ny < 0 || ny > Canvas.Height)
+                if (ny < 0 || ny > height)
                     return;
 
-                if (realsx > Canvas.Width)
+                if (realsx > width)
                     return;
 
                 if (realsx < 0)
                     realsx = 0;
 
-                if (realex > Canvas.Width)
-                    realex = Canvas.Width;
+                if (realex > width)
+                    realex = width;
 
-                for (int i = realsx; i <= realex; i++)
-                    Draw(i, ny, color);
+                Draw(realsx, realex, ny, color);
             }
 
-            int t1x, t2x, y, minx, maxx, t1xp, t2xp;
+            int t2x, minx, t1xp, t2xp;
             bool changed1 = false;
             bool changed2 = false;
-            int signx1, signx2, dx1, dy1, dx2, dy2;
-            int e1, e2;
+            int e1, signx1, signx2, maxx;
             // Sort vertices
             if (y1 > y2) { Swap(ref y1, ref y2); Swap(ref x1, ref x2); }
             if (y1 > y3) { Swap(ref y1, ref y3); Swap(ref x1, ref x3); }
             if (y2 > y3) { Swap(ref y2, ref y3); Swap(ref x2, ref x3); }
 
-            t1x = t2x = x1; y = y1;   // Starting points
-            dx1 = (int)(x2 - x1); if (dx1 < 0) { dx1 = -dx1; signx1 = -1; }
-            else signx1 = 1;
-            dy1 = (int)(y2 - y1);
+            int t1x = t2x = x1; // Starting points 
+            int y = y1;  
+            int dx1 = (x2 - x1); 
+            
+            if (dx1 < 0) 
+            { 
+                dx1 = -dx1;
+                signx1 = -1;
+            }
+            else 
+                signx1 = 1;
+            
+            int dy1 = (y2 - y1);
 
-            dx2 = (int)(x3 - x1);
+            int dx2 = (x3 - x1);
             if (dx2 < 0)
             {
-                dx2 = -dx2; signx2 = -1;
+                dx2 = -dx2; 
+                signx2 = -1;
             }
             else signx2 = 1;
 
-            dy2 = (int)(y3 - y1);
+            int dy2 = (y3 - y1);
 
             if (dy1 > dx1)
             {   // swap values
@@ -385,41 +385,58 @@ namespace LEDPiLib.Modules.Helper
                 changed2 = true;
             }
 
-            e2 = (int)(Convert.ToInt32(dx2) >> 1);
+            int e2 = dx2 >> 1;
             // Flat top, just process the second half
-            if (y1 == y2) goto next;
-            e1 = (int)(Convert.ToInt32(dx1) >> 1);
+            if (y1 == y2) 
+                goto next;
+            
+            e1 = dx1 >> 1;
 
             for (int i = 0; i < dx1;)
             {
                 t1xp = 0; t2xp = 0;
-                if (t1x < t2x) { minx = t1x; maxx = t2x; }
-                else { minx = t2x; maxx = t1x; }
+                if (t1x < t2x)
+                {
+                    minx = t1x;
+                    maxx = t2x;
+                }
+                else
+                {
+                    minx = t2x;
+                    maxx = t1x;
+                }
+
                 // process first line until y value is about to change
                 while (i < dx1)
                 {
                     i++;
-                    e1 += Convert.ToInt32(dy1);
+                    e1 += dy1;
                     while (e1 >= dx1)
                     {
-                        e1 -= Convert.ToInt32(dx1);
-                        if (changed1) t1xp = signx1;//t1x += signx1;
-                        else goto next1;
+                        e1 -= dx1;
+                        if (changed1) 
+                            t1xp = signx1;
+                        else 
+                            goto next1;
                     }
                     if (changed1) break;
-                    else t1x += signx1;
+                    
+                    t1x += signx1;
                 }
-            // Move line
-            next1:
+                
+                // Move line
+                next1:
                 // process second line until y value is about to change
                 while (true)
                 {
-                    e2 += Convert.ToInt32(dy2);
+                    e2 += dy2;
                     while (e2 >= dx2)
                     {
-                        e2 -= Convert.ToInt32(dx2);
-                        if (changed2) t2xp = signx2;//t2x += signx2;
-                        else goto next2;
+                        e2 -= dx2;
+                        if (changed2) 
+                            t2xp = signx2;
+                        else 
+                            goto next2;
                     }
                     if (changed2) break;
                     else t2x += signx2;
@@ -427,24 +444,36 @@ namespace LEDPiLib.Modules.Helper
                     if (dy2 == 0)
                         break;
                 }
-            next2:
+                
+                next2:
                 if (minx > t1x) minx = t1x; if (minx > t2x) minx = t2x;
                 if (maxx < t1x) maxx = t1x; if (maxx < t2x) maxx = t2x;
                 Drawline(minx, maxx, y, col);    // Draw line from min to max points found on the y
                                             // Now increase y
-                if (!changed1) t1x += signx1;
+                if (!changed1) 
+                    t1x += signx1;
+                
                 t1x += t1xp;
-                if (!changed2) t2x += signx2;
+                if (!changed2) 
+                    t2x += signx2;
                 t2x += t2xp;
                 y += 1;
-                if (y == y2) break;
-
+                if (y == y2) 
+                    break;
             }
-        next:
+
+            next:
             // Second half
-            dx1 = (int)(x3 - x2); if (dx1 < 0) { dx1 = -dx1; signx1 = -1; }
-            else signx1 = 1;
-            dy1 = (int)(y3 - y2);
+            dx1 = (x3 - x2);
+            if (dx1 < 0)
+            {
+                dx1 = -dx1;
+                signx1 = -1;
+            }
+            else 
+                signx1 = 1;
+            
+            dy1 = (y3 - y2);
             t1x = x2;
 
             if (dy1 > dx1)
@@ -452,94 +481,160 @@ namespace LEDPiLib.Modules.Helper
                 Swap(ref dy1, ref dx1);
                 changed1 = true;
             }
-            else changed1 = false;
+            else 
+                changed1 = false;
 
-            e1 = (int)(Convert.ToInt32(dx1) >> 1);
+            e1 = dx1 >> 1;
 
             for (int i = 0; i <= dx1; i++)
             {
                 t1xp = 0; t2xp = 0;
-                if (t1x < t2x) { minx = t1x; maxx = t2x; }
-                else { minx = t2x; maxx = t1x; }
+                if (t1x < t2x)
+                {
+                    minx = t1x;
+                    maxx = t2x;
+                }
+                else
+                {
+                    minx = t2x;
+                    maxx = t1x;
+                }
+
                 // process first line until y value is about to change
                 while (i < dx1)
                 {
-                    e1 += Convert.ToInt32(dy1);
+                    e1 += dy1;
                     while (e1 >= dx1)
                     {
-                        e1 -= Convert.ToInt32(dx1);
-                        if (changed1) { t1xp = signx1; break; }//t1x += signx1;
-                        else goto next3;
+                        e1 -= dx1;
+                        if (changed1)
+                        {
+                            t1xp = signx1;
+                            break;
+                        }
+                        else 
+                            goto next3;
                     }
-                    if (changed1) break;
-                    else t1x += signx1;
-                    if (i < dx1) i++;
+                    if (changed1) 
+                        break;
+                    else 
+                        t1x += signx1;
+                    if (i < dx1) 
+                        i++;
                 }
-            next3:
+                
+                next3:
                 // process second line until y value is about to change
-                while (Convert.ToInt32(t2x) != Convert.ToInt32(x3))
+                while (t2x != x3)
                 {
-                    e2 += Convert.ToInt32(dy2);
+                    e2 += dy2;
                     while (e2 >= dx2)
                     {
-                        e2 -= Convert.ToInt32(dx2);
-                        if (changed2) t2xp = signx2;
-                        else goto next4;
+                        e2 -= dx2;
+                        
+                        if (changed2) 
+                            t2xp = signx2;
+                        else 
+                            goto next4;
                     }
-                    if (changed2) break;
-                    else t2x += signx2;
+                    if (changed2) 
+                        break;
+                    else 
+                        t2x += signx2;
 
-                    if (Convert.ToInt32(dy2) == 0)
+                    if (dy2 == 0)
                         break;
                 }
-            next4:
-
-                if (minx > t1x) minx = t1x; if (minx > t2x) minx = t2x;
-                if (maxx < t1x) maxx = t1x; if (maxx < t2x) maxx = t2x;
+                
+                next4:
+                if (minx > t1x) 
+                    minx = t1x; 
+                if (minx > t2x) 
+                    minx = t2x;
+                if (maxx < t1x) 
+                    maxx = t1x; 
+                if (maxx < t2x) 
+                    maxx = t2x;
                 Drawline(minx, maxx, y, col);
-                if (!changed1) t1x += signx1;
+                if (!changed1) 
+                    t1x += signx1;
+
                 t1x += t1xp;
-                if (!changed2) t2x += signx2;
+
+                if (!changed2) 
+                    t2x += signx2;
+                
                 t2x += t2xp;
                 y += 1;
-                if (y > y3) return;
+                
+                if (y > y3) 
+                    return;
             }
         }
 
         public void Draw(IEnumerable<Vector2> vectors, Color col)
         {
-            foreach (IGrouping<float, Vector2> vector2s in vectors.GroupBy(c => c.Y))
+            Canvas.ProcessPixelRows(accessor =>
             {
-                int y = Convert.ToInt32(vector2s.Key);
-
-                if (y >= 0 && y < Canvas.Height)
+                foreach (IGrouping<float, Vector2> vector2s in vectors.GroupBy(c => c.Y))
                 {
-                    var row = Canvas.GetPixelRowSpan(y);
+                    int y = (int) vector2s.Key;
 
-                    foreach (Vector2 vector2 in vector2s)
+                    if (y >= 0 && y < height)
                     {
-                        int x = Convert.ToInt32(vector2.X);
+                        var row = accessor.GetRowSpan(y);
 
-                       if (x >= 0 && x < Canvas.Width)
+                        foreach (Vector2 vector2 in vector2s)
                         {
-                            row[x] = col;
+                            int x = (int) vector2.X;
+
+                            if (x >= 0 && x < width)
+                            {
+                                row[x] = col;
+                            }
                         }
                     }
                 }
-            }
+            });
         }
-
-
-
+      
         public void Draw(float x, float y, Color col)
         {
             int intX = Convert.ToInt32(x);
             int intY = Convert.ToInt32(y);
-
-            if (intX >= 0 && intX < Canvas.Width && intY >= 0 && intY < Canvas.Height)
+            Canvas.ProcessPixelRows(accessor =>
             {
-                Canvas.GetPixelRowSpan(intY)[intX] = col;
-            }
+                if (intY >= 0 && intY < height)
+                {
+                    var row = accessor.GetRowSpan(intY);
+                    if (intX >= 0 && intX < width)
+                    {
+                        row[intX] = col;
+                    }
+                }
+            });
+        }
+
+        private void Draw(float fromX, float toX, float y, Color col)
+        {
+            int intFromX = (int) fromX;
+            int intToX = (int)toX;
+            int intY = (int)y;
+            Canvas.ProcessPixelRows(accessor =>
+            {
+                if (intY >= 0 && intY < height)
+                {
+                    var row = accessor.GetRowSpan(intY);
+                    
+                    for(;intFromX <= intToX; intFromX++)
+                    {
+                        if (intFromX >= 0 && intFromX < width)
+                        {
+                            row[intFromX] = col;
+                        }
+                    }
+                }
+            });
         }
     }
 }

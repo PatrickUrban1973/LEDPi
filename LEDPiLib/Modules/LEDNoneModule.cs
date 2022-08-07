@@ -1,5 +1,4 @@
-﻿using System;
-using LEDPiLib.DataItems;
+﻿using LEDPiLib.DataItems;
 using LEDPiLib.Properties;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -22,7 +21,7 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = Image.Load(Resources.Title);
+            var image = Image.Load<Rgba32>(Resources.Title);
             image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
             return image;
         }

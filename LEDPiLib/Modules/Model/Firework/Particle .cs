@@ -1,53 +1,48 @@
-﻿
+﻿using System;
+using System.Numerics;
 using LEDPiLib.Modules.Helper;
 using SixLabors.ImageSharp.PixelFormats;
-using System;
-using System.Collections.Generic;
 
 
-namespace LEDPiLib.Modules.Model
+namespace LEDPiLib.Modules.Model.Firework
 {
     class Particle
     {
-        private Random random = new Random();
+        private Vector2 velocity;
+        private Vector2 acceleration;
+        private float lifespan;
 
-        private List<Vector2D> pastLocations = new List<Vector2D>();
+        private readonly bool seed;
 
-        private Vector2D velocity;
-        private Vector2D acceleration;
-        float lifespan;
+        private readonly Vector3 hu;
 
-        private bool seed = false;
-
-        Vector3D hu;
-
-        public Particle(float x, float y, Vector3D h)
+        public Particle(float x, float y, Vector3 h)
         {
             hu = h;
 
-            acceleration = new Vector2D(0, 0);
-            velocity = new Vector2D(0, random.Next(-12, -5));
-            Location = new Vector2D(x, y);
+            acceleration = new Vector2(0, 0);
+            velocity = new Vector2(0, MathHelper.GlobalRandom().Next(-12, -5));
+            Location = new Vector2(x, y);
             seed = true;
             lifespan = 255.0f;
         }
 
-        public Particle(Vector2D l, Vector3D h)
+        public Particle(Vector2 l, Vector3 h)
         {
             hu = h;
-            acceleration = new Vector2D(0, 0);
-            velocity = new Vector2D(Convert.ToSingle((random.NextDouble() * 2) - 1), Convert.ToSingle((random.NextDouble() * 2) - 1));
+            acceleration = new Vector2(0, 0);
+            velocity = new Vector2((float)((MathHelper.GlobalRandom().NextDouble() * 2) - 1), (float)((MathHelper.GlobalRandom().NextDouble() * 2) - 1));
 
-            velocity = velocity * Convert.ToSingle(random.Next(2, 8));
+            velocity *= MathHelper.GlobalRandom().Next(2, 8);
             Location = l;
             lifespan = 255.0f;
         }
 
-        public Vector2D Location { get; set; }
+        public Vector2 Location { get; private set; }
 
-        public void ApplyForce(Vector2D force)
+        public void ApplyForce(Vector2 force)
         {
-            acceleration = acceleration + force;
+            acceleration += force;
         }
 
         public void Run(LEDEngine3D engine3D)
@@ -58,7 +53,7 @@ namespace LEDPiLib.Modules.Model
 
         public bool Explode()
         {
-            if (seed && velocity.vector.Y > 0)
+            if (seed && velocity.Y > 0)
             {
                 lifespan = 0;
                 return true;
@@ -69,15 +64,14 @@ namespace LEDPiLib.Modules.Model
         // Method to update location
         public void Update()
         {
-            velocity = velocity + acceleration;
-            Location = Location + velocity;
+            velocity += acceleration;
+            Location += velocity;
             if (!seed)
             {
                 lifespan -= 5.0f;
-                pastLocations.Add(Location);
-                velocity = velocity * 0.75f;
+                velocity *= 0.75f;
             }
-            acceleration = acceleration * 0;
+            acceleration *= 0;
         }
 
         // Method to display
@@ -86,36 +80,21 @@ namespace LEDPiLib.Modules.Model
             if (lifespan < 0)
                 return;
 
-            Vector3D lifeTimeHu = hu.Sub(255 - lifespan, false);
+            Vector3 lifeTimeHu = MathHelper.Sub(hu, 255 - lifespan, false);
 
-            Rgba32 pixel = new Rgba32(Convert.ToByte(lifeTimeHu.vector.X), Convert.ToByte(lifeTimeHu.vector.Y), Convert.ToByte(lifeTimeHu.vector.Z));
+            Rgba32 pixel = new Rgba32(Convert.ToByte(lifeTimeHu.X), Convert.ToByte(lifeTimeHu.Y), Convert.ToByte(lifeTimeHu.Z));
 
             if (seed)
             {
-                engine3D.Draw(Location.vector.X - 1, Location.vector.Y, pixel);
-                engine3D.Draw(Location.vector.X, Location.vector.Y - 1, pixel);
-                engine3D.Draw(Location.vector.X, Location.vector.Y, pixel);
-                engine3D.Draw(Location.vector.X, Location.vector.Y + 1, pixel);
-                engine3D.Draw(Location.vector.X + 1, Location.vector.Y, pixel);
+                engine3D.Draw(Location.X - 1, Location.Y, pixel);
+                engine3D.Draw(Location.X, Location.Y - 1, pixel);
+                engine3D.Draw(Location.X, Location.Y, pixel);
+                engine3D.Draw(Location.X, Location.Y + 1, pixel);
+                engine3D.Draw(Location.X + 1, Location.Y, pixel);
             }
             else
             {
-                Vector3D trailHu = lifeTimeHu;
-
-                for (int i = pastLocations.Count - 1; i >= 0; i--)
-                {
-                    bool outOfColor = trailHu.vector.X < 0 && trailHu.vector.Y < 0 && trailHu.vector.Z < 0;
-
-                    if (outOfColor)
-                        break;
-
-                    Vector2D pastLocation = pastLocations[i];
-                    engine3D.Draw(pastLocation.vector.X, pastLocation.vector.Y, new Rgba32(Convert.ToByte(trailHu.vector.X), Convert.ToByte(trailHu.vector.Y), Convert.ToByte(trailHu.vector.Z)));
-                    
-                    trailHu = trailHu.Sub(5f, false);
-                }
-
-                engine3D.Draw(Location.vector.X, Location.vector.Y, pixel);
+                engine3D.Draw(Location.X, Location.Y, pixel);
             }
         }
 

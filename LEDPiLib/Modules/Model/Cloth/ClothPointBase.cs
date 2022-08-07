@@ -9,7 +9,7 @@ namespace LEDPiLib.Modules.Model.Cloth
         public float Y { get; set; }
         public bool Pinned { get; set; }
 
-        public ClothPointBase(float x, float y, bool pinned = false)
+        protected ClothPointBase(float x, float y, bool pinned = false)
         {
             X = x;
             Y = y;

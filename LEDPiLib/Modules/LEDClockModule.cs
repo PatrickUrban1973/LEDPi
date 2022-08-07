@@ -12,15 +12,13 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Clock)]
     public class LEDClockModule : ModuleBase
     {
-        private bool _init = false;
-        private readonly int size;
+        private bool _init;
         private Image<Rgba32> _clockImage;
 
         private const float _padding = 0.5f;
 
         public LEDClockModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
         {
-            size = LEDPIProcessorBase.LEDHeight;
         }
 
         protected override bool completedRun()
@@ -31,12 +29,11 @@ namespace LEDPiLib.Modules
         protected override Image<Rgba32> RunInternal()
         {
             DateTime actualTime = DateTime.Now;
-            float center = size / 2.0f - _padding;
+            float center = renderWidth / 2.0f - _padding;
 
             if (!_init)
             {
-                _clockImage = new Image<Rgba32>(size, size);
-                SetBackgroundColor(_clockImage);
+                _clockImage = GetNewImage();
 
                 drawCircle(_clockImage, center);
                 drawQuarterHours(_clockImage, center);
@@ -89,7 +86,7 @@ namespace LEDPiLib.Modules
 
         private void drawSeconds(Image<Rgba32> image, float center, DateTime actualTime)
         {
-            float angle = Convert.ToSingle(360 * ((actualTime.Second * 1000 + actualTime.Millisecond) / 60000.0));
+            float angle = 360 * ((actualTime.Second * 1000 + actualTime.Millisecond) / 60000.0f);
 
             float border = center - _padding;
             PointF centerPoint = new PointF(center, center);
@@ -100,7 +97,7 @@ namespace LEDPiLib.Modules
 
         private void drawMinute(Image<Rgba32> image, float center, DateTime actualTime)
         {
-            float angle = Convert.ToSingle(360 / 60 * actualTime.Minute);
+            float angle = 360 / 60 * actualTime.Minute;
 
             float border = center - _padding;
             PointF centerPoint = new PointF(center, center);
@@ -111,7 +108,7 @@ namespace LEDPiLib.Modules
 
         private void drawHour(Image<Rgba32> image, float center, DateTime actualTime)
         {
-            float angle = Convert.ToSingle((360 / 12 * actualTime.Hour) + (30 / 60f * actualTime.Minute));
+            float angle = (360 / 12 * actualTime.Hour) + (30 / 60f * actualTime.Minute);
 
             float border = center * .50f;
             PointF centerPoint = new PointF(center, center);

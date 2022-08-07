@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
-using LEDPiLib.Modules.Model;
 using LEDPiLib.Modules.Model.Molecule;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
@@ -20,22 +18,19 @@ namespace LEDPiLib.Modules
     {
 
         private Image<Rgba32> image;
-        private List<KeyValuePair<Vector2D, Vector2D>> molecules = new List<KeyValuePair<Vector2D, Vector2D>>();
+        private readonly List<KeyValuePair<Vector2, Vector2>> molecules = new List<KeyValuePair<Vector2, Vector2>>();
 
-        private MoleculeParticle p1;
-        private MoleculeParticle p2;
-        private int offset = 15;
-        private int maxMolecules = 10;
+        private readonly MoleculeParticle p1;
+        private readonly MoleculeParticle p2;
+        private const int offset = 15;
 
         public LEDMoleculeModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f, 30)
         {
-            Random random = new Random();
-
             p1 = new MoleculeParticle(renderWidth / 2 - offset, renderHeight / 4 - offset);
             p2 = new MoleculeParticle(renderWidth / 2 + offset, renderHeight / 4 + offset);
 
-            p1.Vel = new Vector2D(MathHelper.Map(Convert.ToSingle(random.NextDouble()), 0, 1, 1, 2), 0);
-            p2.Vel = new Vector2D(MathHelper.Map(Convert.ToSingle(random.NextDouble()), 0, 1, 1, 2), 0);
+            p1.Vel = new Vector2(MathHelper.Map((float)MathHelper.GlobalRandom().NextDouble(), 0, 1, 1, 2), 0);
+            p2.Vel = new Vector2(MathHelper.Map((float)MathHelper.GlobalRandom().NextDouble(), 0, 1, 1, 2), 0);
         }
 
         protected override bool completedRun()
@@ -45,9 +40,11 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            image = GetNewImage();
+            UseBlend(image, 0.85f);
 
+            molecules.Clear();
+            
             p1.ApplyForce(gravityForce(0.2f));
             p2.ApplyForce(gravityForce(0.2f));
             p1.ApplyForce(springForce(p1, p2, Convert.ToInt32(renderOffset * 10), 0.01f));
@@ -57,38 +54,31 @@ namespace LEDPiLib.Modules
             p1.Edges(renderWidth, renderHeight);
             p2.Edges(renderWidth, renderHeight);
 
-            molecules.Add(new KeyValuePair<Vector2D, Vector2D>(p1.Pos, p2.Pos));
+            molecules.Add(new KeyValuePair<Vector2, Vector2>(p1.Pos, p2.Pos));
 
-            if (molecules.Count > maxMolecules)
-                molecules.RemoveAt(0);
-
-            var temp = molecules.ToList();
-            temp.Reverse();
-
-            int counter = 0;
-            foreach (KeyValuePair<Vector2D, Vector2D> molecule in temp)
+            Color color = new Color(new Rgba32(255, 255, 255));
+            
+            foreach (KeyValuePair<Vector2, Vector2> molecule in molecules)
             {
-                byte greyscale = Convert.ToByte(MathHelper.Map(counter++, 0, maxMolecules, 255, 0));
-
-                Color color = new Color(new Rgba32(greyscale, greyscale, greyscale));
-                image.Mutate(c => c.DrawLines(color, 0.1f, new []{new PointF(molecule.Key.vector.X, molecule.Key.vector.Y), new PointF(molecule.Value.vector.X, molecule.Value.vector.Y) }));
-                image.Mutate(c => c.Draw(color, .5f, new ComplexPolygon(new EllipsePolygon(new PointF(molecule.Key.vector.X, molecule.Key.vector.Y), renderOffset * 3))));
-                image.Mutate(c => c.Draw(color, .5f, new ComplexPolygon(new EllipsePolygon(new PointF(molecule.Value.vector.X, molecule.Value.vector.Y), renderOffset * 3))));
+                image.Mutate(c => c.DrawLines(color, 0.1f, new []{new PointF(molecule.Key.X, molecule.Key.Y), new PointF(molecule.Value.X, molecule.Value.Y) }));
+                image.Mutate(c => c.Draw(color, .5f, new ComplexPolygon(new EllipsePolygon(new PointF(molecule.Key.X, molecule.Key.Y), renderOffset * 3))));
+                image.Mutate(c => c.Draw(color, .5f, new ComplexPolygon(new EllipsePolygon(new PointF(molecule.Value.X, molecule.Value.Y), renderOffset * 3))));
             }
 
+            SetLastPictureBlend(image);
             return image;
         }
 
-        private Vector2D gravityForce(float strength)
+        private Vector2 gravityForce(float strength)
         {
-            return new Vector2D(0, strength);
+            return new Vector2(0, strength);
         }
 
-        private Vector2D springForce(MoleculeParticle a, MoleculeParticle b, int len, float constant)
+        private Vector2 springForce(MoleculeParticle a, MoleculeParticle b, int len, float constant)
         {
-            Vector2D force = b.Pos - a.Pos;
-            float currentLen = Vector2.Distance(new Vector2(0,0), force.vector);
-            force = new Vector2D(Vector2.Normalize(force.vector) * (len - currentLen));
+            Vector2 force = b.Pos - a.Pos;
+            float currentLen = Vector2.Distance(new Vector2(0,0), force);
+            force = Vector2.Normalize(force) * (len - currentLen);
 
             force *= -constant;
 

@@ -12,10 +12,10 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Gif)]
     public class LEDShowGifModule : ModuleBase
     {
-        private string _fileName;
+        private readonly string _fileName;
         private Image<Rgba32> _display;
-        private Stopwatch stopwatch = new Stopwatch();
-        private Image<Rgba32> _currentPicture = null;
+        private readonly Stopwatch stopwatch = new Stopwatch();
+        private Image<Rgba32> _currentPicture;
         private int _nextFrame;
 
         public LEDShowGifModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
@@ -33,7 +33,7 @@ namespace LEDPiLib.Modules
         {
             if (_currentPicture == null)
             {
-                _currentPicture = Image.Load(_fileName).CloneAs<Rgba32>();
+                _currentPicture = Image.Load<Rgba32>(_fileName);
                 _currentPicture.Mutate(c => c.Resize(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight));
             }
 
@@ -44,15 +44,16 @@ namespace LEDPiLib.Modules
                 var frame = _currentPicture.Frames[_nextFrame++];
                 Thread.Sleep(new TimeSpan(0, 0, 0, 0, frame.Metadata.GetGifMetadata().FrameDelay * 10));
 
-                for (int y = 0; y < frame.Height; y++)
+                frame.ProcessPixelRows(_display.Frames[0], (sourceAccessor, targetAccessor) =>
                 {
-                    var row = frame.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < frame.Width; x++)
+                    for (int i = 0; i < sourceAccessor.Height; i++)
                     {
-                        _display.GetPixelRowSpan(y)[x] = row[x];
+                        Span<Rgba32> sourceRow = sourceAccessor.GetRowSpan(i);
+                        Span<Rgba32> targetRow = targetAccessor.GetRowSpan(i);
+
+                        sourceRow.CopyTo(targetRow);
                     }
-                }
+                });
             }
 
             if (_nextFrame >= _currentPicture.Frames.Count)

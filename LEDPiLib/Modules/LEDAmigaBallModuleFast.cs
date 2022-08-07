@@ -15,38 +15,38 @@ namespace LEDPiLib.Modules
     {
         public LEDAmigaBallModuleFast(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1, 15)
         {
-            x = LEDPIProcessorBase.LEDWidth * 0.5f;
-            dx = LEDPIProcessorBase.LEDWidth * 0.003f;
-            xBoundMax = LEDPIProcessorBase.LEDWidth * 0.8f;
-            xBoundMin = LEDPIProcessorBase.LEDWidth * 0.2f;
-            yBoundMax = LEDPIProcessorBase.LEDHeight * 0.68f;
-            yConstante = LEDPIProcessorBase.LEDHeight * 0.40f;
+            x = LEDWidth * 0.5f;
+            dx = LEDWidth * 0.003f;
+            xBoundMax = LEDWidth * 0.8f;
+            xBoundMin = LEDWidth * 0.2f;
+            yBoundMax = LEDHeight * 0.68f;
+            yConstante = LEDHeight * 0.40f;
 
             backGroundImage.Mutate(c => c.BackgroundColor(Color.LightGray));
             draw_wireframe(backGroundImage);
-            backGroundImage.Mutate(c => c.Resize(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight));
+            backGroundImage.Mutate(c => c.Resize(LEDWidth, LEDHeight));
         }
 
         private float x;
-        private float dx;
-        private float xBoundMax;
-        private float xBoundMin;
+        private readonly float dx;
+        private readonly float xBoundMax;
+        private readonly float xBoundMin;
 
-        private float yBoundMax;
-        private float yConstante;
-        private List<int> _ys = new List<int>() { 442, 454, 468 };
+        private readonly float yBoundMax;
+        private readonly float yConstante;
+        private readonly List<int> _ys = new List<int>() { 442, 454, 468 };
 
         private float phase = 45.0f;
-        private float dp = 2.5f;
+        private const float dp = 2.5f;
         private bool right = true;
-        private float y_ang = 0.0f;
+        private float y_ang;
 
-        private Image<Rgba32> backGroundImage =
+        private readonly Image<Rgba32> backGroundImage =
             new Image<Rgba32>(640, 512);
 
         protected override bool completedRun()
         {
-            return base.completedRun() && right && x == LEDPIProcessorBase.LEDWidth * 0.5f;
+            return base.completedRun() && right && x == LEDWidth * 0.5f;
         }
 
         protected override Image<Rgba32> RunInternal()
@@ -80,32 +80,31 @@ namespace LEDPiLib.Modules
 
             y_ang = (y_ang + 1.5f) % 360.0f;
 
-            float y = yBoundMax - yConstante * Convert.ToSingle(Math.Abs(Math.Cos(y_ang * Math.PI / 180.0)));
+            float y = yBoundMax - yConstante * (float)(Math.Abs(Math.Cos(y_ang * Math.PI / 180.0)));
             calc_and_draw(image, phase, 12.0f, x, y);
             
             return image;
         }
 
 
-        private float get_lat(float phase, int i)
+        private float get_lat(float localPhase, int i)
         {
             if (i == 0)
                 return -90.0f;
             else if (i == 9)
                 return 90.0f;
             else
-                return -90.0f + phase + (i - 1) * 22.5f;
+                return -90.0f + localPhase + (i - 1) * 22.5f;
         }
 
-        private Dictionary<PointF, PointF> calc_points(float phase)
+        private Dictionary<PointF, PointF> calc_points(float localPhase)
         {
             Dictionary<PointF, PointF> points = new Dictionary<PointF, PointF>();
-            double sin_lat;
             
             for(int i =0; i <= 10; i++)
             {
-                float lat = get_lat(phase, i);
-                sin_lat = Math.Sin(lat * Math.PI / 180.0);
+                float lat = get_lat(localPhase, i);
+                double sin_lat = Math.Sin(lat * Math.PI / 180.0);
 
                 for (int j = 0; j <= 9; j++)
                 {
@@ -113,7 +112,7 @@ namespace LEDPiLib.Modules
                     double y = Math.Sin(lon * Math.PI / 180.0);
                     double l = Math.Cos(lon * Math.PI / 180.0);
 
-                    points.Add(new PointF(i, j), new PointF(Convert.ToSingle(sin_lat * l), Convert.ToSingle(y)));
+                    points.Add(new PointF(i, j), new PointF((float)(sin_lat * l), (float)y));
                 }
             }
 
@@ -128,8 +127,8 @@ namespace LEDPiLib.Modules
             foreach(PointF point in points.Keys.ToList())
             {
                 PointF otherPoint = points[point];
-                otherPoint.X = Convert.ToSingle(otherPoint.X * ct - otherPoint.Y * st);
-                otherPoint.Y = Convert.ToSingle(otherPoint.X * st + otherPoint.Y * ct);
+                otherPoint.X = (float)(otherPoint.X * ct - otherPoint.Y * st);
+                otherPoint.Y = (float)(otherPoint.X * st + otherPoint.Y * ct);
 
                 points[point] = otherPoint;
             }
@@ -141,8 +140,8 @@ namespace LEDPiLib.Modules
             foreach (PointF point in points.Keys.ToList())
             {
                 PointF otherPoint = points[point];
-                otherPoint.X = Convert.ToSingle(otherPoint.X * s + tx);
-                otherPoint.Y = Convert.ToSingle(otherPoint.Y * s + ty);
+                otherPoint.X = otherPoint.X * s + tx;
+                otherPoint.Y = otherPoint.Y * s + ty;
 
                 points[point] = otherPoint;
             }
@@ -224,30 +223,33 @@ namespace LEDPiLib.Modules
         {
             for (int i = 0; i <= 13; i++)
             {
-                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50, i * 36), new PointF(590, i * 36) }));
+                var i1 = i;
+                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50, i1 * 36), new PointF(590, i1 * 36) }));
             }
 
             for (int i = 0; i <= 16; i++)
             {
-                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i * 36, 0), new PointF(50 + i * 36, 432) }));
+                var i1 = i;
+                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i1 * 36, 0), new PointF(50 + i1 * 36, 432) }));
             }
 
             for (int i = 0; i <= 16; i++)
             {
-                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i * 36, 432), new PointF(Convert.ToSingle(i * 42.666), 480) }));
+                var i1 = i;
+                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i1 * 36, 432), new PointF(i1 * 42.666f, 480) }));
             }
 
             foreach (int y in _ys)
             {
-                float x1 = (Convert.ToSingle(50 - 50.0 * (y - 432) / (480.0 - 432.0)));
+                float x1 = (50 - 50.0f * (y - 432f) / (480.0f - 432.0f));
                 image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(x1, y), new PointF(640 - x1, y) }));
             }
         }
 
-        private void calc_and_draw(Image<Rgba32> image, float phase, float scale, float x, float y)
+        private void calc_and_draw(Image<Rgba32> image, float localPhase, float scale, float localX, float y)
         {
-            Dictionary<PointF, PointF> points = calc_points(phase % 22.5f);
-            transform(points, scale, x, y);
+            Dictionary<PointF, PointF> points = calc_points(localPhase % 22.5f);
+            transform(points, scale, localX, y);
             draw_shadow(image, points);
 //            draw_wireframe(image);
             fill_tiles(image, points, phase >= 22.5f);

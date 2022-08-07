@@ -3,7 +3,7 @@
 	public class Perlin
 	{
 
-		public int repeat;
+		private readonly int repeat;
 
 		public Perlin(int repeat = -1)
 		{
@@ -74,24 +74,22 @@
             float v = fade(yf);
             float w = fade(zf);
 
-			int aaa, aba, aab, abb, baa, bba, bab, bbb;
-			aaa = p[p[p[xi] + yi] + zi];
-			aba = p[p[p[xi] + inc(yi)] + zi];
-			aab = p[p[p[xi] + yi] + inc(zi)];
-			abb = p[p[p[xi] + inc(yi)] + inc(zi)];
-			baa = p[p[p[inc(xi)] + yi] + zi];
-			bba = p[p[p[inc(xi)] + inc(yi)] + zi];
-			bab = p[p[p[inc(xi)] + yi] + inc(zi)];
-			bbb = p[p[p[inc(xi)] + inc(yi)] + inc(zi)];
+            int aaa = p[p[p[xi] + yi] + zi];
+            int aba = p[p[p[xi] + inc(yi)] + zi];
+            int aab = p[p[p[xi] + yi] + inc(zi)];
+            int abb = p[p[p[xi] + inc(yi)] + inc(zi)];
+            int baa = p[p[p[inc(xi)] + yi] + zi];
+            int bba = p[p[p[inc(xi)] + inc(yi)] + zi];
+            int bab = p[p[p[inc(xi)] + yi] + inc(zi)];
+            int bbb = p[p[p[inc(xi)] + inc(yi)] + inc(zi)];
 
-            float x1, x2, y1, y2;
-			x1 = MathHelper.Lerp(grad(aaa, xf, yf, zf),                // The gradient function calculates the dot product between a pseudorandom
+            float x1 = MathHelper.Lerp(grad(aaa, xf, yf, zf),                // The gradient function calculates the dot product between a pseudorandom
 						grad(baa, xf - 1, yf, zf),              // gradient vector and the vector from the input coordinate to the 8
 						u);                                     // surrounding points in its unit cube.
-			x2 = MathHelper.Lerp(grad(aba, xf, yf - 1, zf),                // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
+            float x2 = MathHelper.Lerp(grad(aba, xf, yf - 1, zf),                // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
 						grad(bba, xf - 1, yf - 1, zf),              // values we made earlier.
 						  u);
-			y1 = MathHelper.Lerp(x1, x2, v);
+            float y1 = MathHelper.Lerp(x1, x2, v);
 
 			x1 = MathHelper.Lerp(grad(aab, xf, yf, zf - 1),
 						grad(bab, xf - 1, yf, zf - 1),
@@ -99,7 +97,7 @@
 			x2 = MathHelper.Lerp(grad(abb, xf, yf - 1, zf - 1),
 						  grad(bbb, xf - 1, yf - 1, zf - 1),
 						  u);
-			y2 = MathHelper.Lerp(x1, x2, v);
+			float y2 = MathHelper.Lerp(x1, x2, v);
 
 			var result = (MathHelper.Lerp(y1, y2, w) + 1) / 2;
 			

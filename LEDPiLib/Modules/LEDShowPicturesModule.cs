@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using LEDPiLib.DataItems;
+using LEDPiLib.Modules.Helper;
 using LEDPiLib.Properties;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -25,15 +26,15 @@ namespace LEDPiLib.Modules
 
         private List<Image<Rgba32>> _pictures;
         private Image<Rgba32> _wholeTextImage;
-        private int _offset = 0;
-        private TimeSpan _speed = new TimeSpan(0, 0, 0, 0, 15);
-        private string _path;
+        private int _offset;
+        private readonly TimeSpan _speed = new TimeSpan(0, 0, 0, 0, 15);
+        private readonly string _path;
         private Direction currentDirection;
-        private int currentPictureIndex = 0;
+        private int currentPictureIndex;
         private Image<Rgba32> _display;
-        private Stopwatch stopwatch = new Stopwatch();
-        private bool completedFirstRun = false;
-        private bool completedDisplayRun = false;
+        private readonly Stopwatch stopwatch = new Stopwatch();
+        private bool completedFirstRun;
+        private bool completedDisplayRun;
 
         public LEDShowPicturesModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
         {
@@ -50,16 +51,14 @@ namespace LEDPiLib.Modules
         {
             if (_pictures == null)
             {
-                _pictures = new List<Image<Rgba32>>();
-
-                _pictures.Add(Image.Load(Resources.Black));
+                _pictures = new List<Image<Rgba32>> { Image.Load<Rgba32>(Resources.Black) };
 
                 foreach (string fileName in Directory.GetFiles(_path))
                 {
-                    _pictures.Add(Image.Load(fileName).CloneAs<Rgba32>());
+                    _pictures.Add(Image.Load<Rgba32>(fileName));
                 }
 
-                _pictures.ForEach(c => c.Mutate(b => b.Resize(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight, KnownResamplers.NearestNeighbor)));
+                _pictures.ForEach(c => c.Mutate(b => b.Resize(LEDWidth, LEDHeight, KnownResamplers.NearestNeighbor)));
             }
 
             if (!stopwatch.IsRunning)
@@ -107,12 +106,12 @@ namespace LEDPiLib.Modules
 
         private bool checkReset()
         {
-            if (((currentDirection == Direction.Up || currentDirection == Direction.Down) && _offset > LEDPIProcessorBase.LEDHeight)
-                || ((currentDirection == Direction.Left || currentDirection == Direction.Right) && _offset > LEDPIProcessorBase.LEDWidth))
+            if (((currentDirection == Direction.Up || currentDirection == Direction.Down) && _offset > LEDHeight)
+                || ((currentDirection == Direction.Left || currentDirection == Direction.Right) && _offset > LEDWidth))
             {
                 _offset = 0;
 
-                currentDirection = (Direction) new Random().Next(3);
+                currentDirection = (Direction) MathHelper.GlobalRandom().Next(Enum.GetValues(typeof(Direction)).Length);
                 return true;
             }
 
@@ -121,22 +120,22 @@ namespace LEDPiLib.Modules
 
         private Image<Rgba32> generatePicture(Direction direction, Image<Rgba32> currentImage, Image<Rgba32> nextImage)
         {
-            int height = LEDPIProcessorBase.LEDHeight;
-            int width = LEDPIProcessorBase.LEDWidth;
-            SixLabors.ImageSharp.Point pointCurrentImage;
-            SixLabors.ImageSharp.Point pointNextImage;
+            int height = LEDHeight;
+            int width = LEDWidth;
+            Point pointCurrentImage;
+            Point pointNextImage;
 
             if (direction == Direction.Down || direction == Direction.Up)
             {
                 if (direction == Direction.Down)
                 {
-                    pointCurrentImage = new SixLabors.ImageSharp.Point(0, 0);
-                    pointNextImage = new SixLabors.ImageSharp.Point(0, LEDPIProcessorBase.LEDHeight);
+                    pointCurrentImage = new Point(0, 0);
+                    pointNextImage = new Point(0, LEDHeight);
                 }
                 else
                 {
-                    pointNextImage = new SixLabors.ImageSharp.Point(0, 0);
-                    pointCurrentImage = new SixLabors.ImageSharp.Point(0, LEDPIProcessorBase.LEDHeight);
+                    pointNextImage = new Point(0, 0);
+                    pointCurrentImage = new Point(0, LEDHeight);
                 }
 
                 height *= 2;
@@ -145,13 +144,13 @@ namespace LEDPiLib.Modules
             {
                 if (direction == Direction.Left)
                 {
-                    pointCurrentImage = new SixLabors.ImageSharp.Point(0, 0);
-                    pointNextImage = new SixLabors.ImageSharp.Point(LEDPIProcessorBase.LEDWidth, 0);
+                    pointCurrentImage = new Point(0, 0);
+                    pointNextImage = new Point(LEDWidth, 0);
                 }
                 else
                 {
-                    pointNextImage = new SixLabors.ImageSharp.Point(0, 0);
-                    pointCurrentImage = new SixLabors.ImageSharp.Point(LEDPIProcessorBase.LEDWidth, 0);
+                    pointNextImage = new Point(0, 0);
+                    pointCurrentImage = new Point(LEDWidth, 0);
                 }
 
                 width *= 2;
@@ -188,7 +187,7 @@ namespace LEDPiLib.Modules
 
             Image<Rgba32> cropedImage = wholeImage.Clone();
 
-            cropedImage.Mutate(c => c.Crop(new Rectangle(x,y, LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight)));
+            cropedImage.Mutate(c => c.Crop(new Rectangle(x,y, LEDWidth, LEDHeight)));
 
             return cropedImage;
         }

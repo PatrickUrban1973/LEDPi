@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.ReactionDiffusion;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using static LEDPiLib.LEDPIProcessorBase;
@@ -12,8 +13,8 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.ReactionDiffusion)]
     public class LEDReactionDiffusionModule : ModuleBase
     {
-        private List<List<Cell>> grid = new List<List<Cell>>();
-        private List<List<Cell>> prev = new List<List<Cell>>();
+        private readonly List<List<Cell>> grid = new List<List<Cell>>();
+        private readonly List<List<Cell>> prev = new List<List<Cell>>();
 
         private float dA = 1.0f;
         private float dB = 0.5f;
@@ -22,8 +23,6 @@ namespace LEDPiLib.Modules
 
         public LEDReactionDiffusionModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 2f)
         {
-            Random random = new Random();
-
             for (int i = 0; i < renderHeight; i++)
             {
                 grid.Add(new List<Cell>());
@@ -38,8 +37,8 @@ namespace LEDPiLib.Modules
 
             for (int n = 0; n < 10; n++)
             {
-                int startX = random.Next(20, renderWidth - 20);
-                int startY = random.Next(20, renderHeight - 20);
+                int startX = MathHelper.GlobalRandom().Next(20, renderWidth - 20);
+                int startY = MathHelper.GlobalRandom().Next(20, renderHeight - 20);
 
                 for (int i = startY; i < startY + 10; i++)
                 {
@@ -59,8 +58,7 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderHeight, renderWidth);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
             for (int i = 1; i < renderHeight - 1; i++)
             {
@@ -106,16 +104,18 @@ namespace LEDPiLib.Modules
                 }
             }
 
-            for (int i = 0; i < renderHeight; i++)
+            image.ProcessPixelRows(accessor =>
             {
-                for (int j = 0; j < renderWidth; j++)
+                for (int i = 0; i < renderHeight; i++)
                 {
-                    int color = Convert.ToInt32((grid[i][j].A - grid[i][j].B)) * 255;
-
-                    image.GetPixelRowSpan(i)[j] = new Rgba32(255 - color, 255 - color, 255 - color);
+                    var row = accessor.GetRowSpan(i);
+                    for (int j = 0; j < renderWidth; j++)
+                    {
+                        int color = Convert.ToInt32((grid[i][j].A - grid[i][j].B)) * 255;
+                        row[j] = new Rgba32(255 - color, 255 - color, 255 - color);
+                    }
                 }
-            }
-
+            });
 
             copyGrid();
             return image;

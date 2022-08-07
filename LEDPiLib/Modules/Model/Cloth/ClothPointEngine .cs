@@ -8,11 +8,11 @@ namespace LEDPiLib.Modules.Model.Cloth
 {
     public class ClothPointEngine : ClothPointBase
     {
-        public float BaseX { get; set; }
-        public float BaseY { get; set; }
-        public float Range { get; set; }
-        public float Angle { get; set; }
-        public float Speed { get; set; }
+        private float BaseX { get; set; }
+        private float BaseY { get; set; }
+        private float Range { get; set; }
+        private float Angle { get; set; }
+        private float Speed { get; set; }
 
 
         public ClothPointEngine(float x, float y, float basex, float basey, float range, float angle, float speed):base(x,y,true)
@@ -26,7 +26,7 @@ namespace LEDPiLib.Modules.Model.Cloth
 
         public override void Update()
         {
-            X = Convert.ToSingle(BaseX + Math.Cos(Angle) * Range);
+            X = (float)(BaseX + Math.Cos(Angle) * Range);
             Angle += Speed;
         }
 

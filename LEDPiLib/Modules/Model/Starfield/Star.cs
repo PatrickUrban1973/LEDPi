@@ -14,19 +14,17 @@ namespace LEDPiLib.Modules.Model.Starfield
         private float z;
 
         private float pz;
-        private Random random = new Random();
 
         public Star()
         {
-            x = random.Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
-            y = random.Next(-Convert.ToInt32(RenderHeight / 2), Convert.ToInt32(RenderHeight / 2));
-            z = random.Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
+            x = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
+            y = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderHeight / 2), Convert.ToInt32(RenderHeight / 2));
+            z = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
             pz = z;
         }
 
-
-        public static float RenderWidth { get; set; } = 0;
-        public static float RenderHeight { get; set; } = 0;
+        public static float RenderWidth { get; set; }
+        public static float RenderHeight { get; set; }
 
         public void Update(float speed)
         {
@@ -45,9 +43,9 @@ namespace LEDPiLib.Modules.Model.Starfield
             // Note: in this way I also avoid a potential division by 0.
             if (z < 1)
             {
-                x = random.Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
-                y = random.Next(-Convert.ToInt32(RenderHeight / 2), Convert.ToInt32(RenderHeight / 2));
-                z = random.Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
+                x = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
+                y = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderHeight / 2), Convert.ToInt32(RenderHeight / 2));
+                z = MathHelper.GlobalRandom().Next(-Convert.ToInt32(RenderWidth / 2), Convert.ToInt32(RenderWidth / 2));
                 pz = z;
             }
         }
@@ -62,12 +60,6 @@ namespace LEDPiLib.Modules.Model.Starfield
 
             float sx = MathHelper.Map(x / z, 0, 1, 0, RenderWidth / 2);
             float sy = MathHelper.Map(y / z, 0, 1, 0, RenderHeight / 2);
-
-            // I use the z value to increase the star size between a range from 0 to 16.
-            float r = MathHelper.Map(z, 0, RenderWidth / 2, 16, 0);
-
-            IPen pen = Pens.Dot(Color.Gray, 0.5f);
-   //         image.Mutate(c => c.Draw(pen, new ComplexPolygon(new EllipsePolygon(new PointF(sx, sy), r))));
 
             // Here i use the "pz" valute to get the previous position of the stars,
             // so I can draw a line from the previous position to the new (current) one.

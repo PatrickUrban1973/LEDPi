@@ -59,7 +59,7 @@ namespace LEDPiLib.Modules
             "ffebd8",
         };
 
-        public LEDClockModule2(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f)
+        public LEDClockModule2(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration)
         {
         }
 
@@ -72,8 +72,7 @@ namespace LEDPiLib.Modules
         {
             DateTime actualTime = DateTime.Now;
             float center = renderWidth / 2.0f - _padding;
-            Image<Rgba32> clockImage = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(clockImage);
+            Image<Rgba32> clockImage = GetNewImage();
 
             Dictionary<float, Color> currentSeconds = new Dictionary<float, Color>();
             
@@ -85,7 +84,7 @@ namespace LEDPiLib.Modules
             {
                 int currentSecond = dateTime.Second;
 
-                float angle = Convert.ToSingle(360 * ((currentSecond * 1000) / 60000.0));
+                float angle = 360 * ((currentSecond * 1000) / 60000.0f);
 
                 if (!currentSeconds.ContainsKey(angle))
                 {
@@ -103,7 +102,7 @@ namespace LEDPiLib.Modules
             {
                 int currentSecond = dateTime.Second;
 
-                float angle = Convert.ToSingle(360 * ((currentSecond * 1000) / 60000.0));
+                float angle = 360 * ((currentSecond * 1000) / 60000.0f);
 
                 if (!currentSeconds.ContainsKey(angle))
                 {
@@ -112,7 +111,7 @@ namespace LEDPiLib.Modules
                 }
 
                 dateTime = dateTime.AddMilliseconds(-50);
-           }
+            }
 
             drawLines(clockImage, center, currentSeconds);
             drawSeconds(clockImage, center, actualTime, 1.5f, Color.ParseHex(colorSeconds.First()));
@@ -121,12 +120,6 @@ namespace LEDPiLib.Modules
             drawMinute(clockImage, center, actualTime);
 
             return clockImage;
-        }
-
-        private void drawCircle(Image<Rgba32> image, float center)
-        {
-            IPen pen = Pens.Dot(Color.Gray, 0.5f);
-            image.Mutate(c => c.Draw(pen, new ComplexPolygon(new EllipsePolygon(new PointF(center, center), center - _padding))));
         }
 
         private void drawLines(Image<Rgba32> image, float center, Dictionary<float, Color> rednumbers)
@@ -149,7 +142,7 @@ namespace LEDPiLib.Modules
 
         private void drawSeconds(Image<Rgba32> image, float center, DateTime actualTime, float radius, Color color)
         {
-            float angle = Convert.ToSingle(360 * ((actualTime.Second * 1000 + actualTime.Millisecond) / 60000.0));
+            float angle = 360 * ((actualTime.Second * 1000 + actualTime.Millisecond) / 60000.0f);
 
             float border = center - _padding;
             PointF centerPoint = new PointF(center, center);
@@ -160,7 +153,7 @@ namespace LEDPiLib.Modules
 
         private void drawMinute(Image<Rgba32> image, float center, DateTime actualTime)
         {
-            float angle = Convert.ToSingle(360 / 60 * actualTime.Minute);
+            float angle = 360 / 60 * actualTime.Minute;
 
             float border = center - _padding;
             PointF centerPoint = new PointF(center, center);
@@ -174,7 +167,7 @@ namespace LEDPiLib.Modules
 
         private void drawHour(Image<Rgba32> image, float center, DateTime actualTime)
         {
-            float angle = Convert.ToSingle((360 / 12 * actualTime.Hour) + (30 / 60f * actualTime.Minute));
+            float angle = (360 / 12 * actualTime.Hour) + (30 / 60f * actualTime.Minute);
 
             float border = center * .50f;
             PointF centerPoint = new PointF(center, center);

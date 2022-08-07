@@ -3,7 +3,6 @@ using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using System;
 using LEDPiLib.DataItems;
 using static LEDPiLib.LEDPIProcessorBase;
 
@@ -25,10 +24,9 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
-            int center = LEDPIProcessorBase.LEDHeight / 2;
+            int center = LEDHeight / 2;
 
             if (offset > 20)
                 offset = 1;

@@ -1,4 +1,7 @@
-﻿namespace LEDPiLib.Modules.Model.Pong
+﻿using System.Numerics;
+using LEDPiLib.Modules.Model.Common;
+
+namespace LEDPiLib.Modules.Model.Pong
 {
     class Paddle : PongBase
     {
@@ -10,37 +13,37 @@
         private const int paddleWidth = 2;
         private float startPos;
 
-        public Paddle(bool left, ref Ball ball, Vector2D maxBounds) : base ((left ? new Vector2D(1, (maxBounds.vector.Y / 2) - (paddleLength / 2)) : new Vector2D(maxBounds.vector.X - paddleWidth - 2, (maxBounds.vector.Y / 2) - (paddleLength / 2))), new Vector2D(paddleWidth, paddleLength), maxBounds)
+        public Paddle(bool left, ref Ball ball, Vector2 maxBounds) : base ((left ? new Vector2(1, (maxBounds.Y / 2) - (paddleLength / 2)) : new Vector2(maxBounds.X - paddleWidth - 2, (maxBounds.Y / 2) - (paddleLength / 2))), new Vector2(paddleWidth, paddleLength), maxBounds)
         {
             this.ball = ball;
             this.left = left;
 
-            startPos = rectangle.Pos.vector.Y;
+            startPos = rectangle.Pos.Y;
         }
 
         public void Reset()
         {
-            rectangle.Pos.vector.Y = startPos;
+            rectangle.Pos.Y = startPos;
         }
 
         public override void Move()
         {
             if (left == !ball.BallLeft)
             {
-                rectangle.Pos.vector.Y += 1;
+                rectangle.Pos.Y += 1;
             }
             else
             {
-                rectangle.Pos.vector.Y -= speed * (rectangle.Pos.vector.Y + (rectangle.Size.vector.Y / 2) > ball.GetPositionY() ? 1 : -1);
+                rectangle.Pos.Y -= speed * (rectangle.Pos.Y + (rectangle.Size.Y / 2) > ball.GetPositionY() ? 1 : -1);
             }
 
-            if (rectangle.Pos.vector.Y <= 0)
+            if (rectangle.Pos.Y <= 0)
             {
-                rectangle.Pos.vector.Y = 0;
+                rectangle.Pos.Y = 0;
             }
-            else if (rectangle.Pos.vector.Y + rectangle.Size.vector.Y >= maxBounds.vector.Y)
+            else if (rectangle.Pos.Y + rectangle.Size.Y >= maxBounds.Y)
             {
-                rectangle.Pos.vector.Y = maxBounds.vector.Y - rectangle.Size.vector.Y - 1;
+                rectangle.Pos.Y = maxBounds.Y - rectangle.Size.Y - 1;
             }
 
             hitBall();
@@ -48,12 +51,12 @@
 
         private void hitBall()
         {
-            float selfX = rectangle.Pos.vector.X + (left ? rectangle.Size.vector.X + 1 : -1);
+            float selfX = rectangle.Pos.X + (left ? rectangle.Size.X + 1 : -1);
 
             if (left == ball.BallLeft && selfX - 1 <= ball.GetPositionX() && selfX + 1 >= ball.GetPositionX())
             {
-                float minPaddleY = rectangle.Pos.vector.Y;
-                float maxPaddleY = rectangle.Pos.vector.Y + rectangle.Size.vector.Y;
+                float minPaddleY = rectangle.Pos.Y;
+                float maxPaddleY = rectangle.Pos.Y + rectangle.Size.Y;
                 float minBallY = ball.GetPositionYRange().X;
                 float maxBallY = ball.GetPositionYRange().Y;
 

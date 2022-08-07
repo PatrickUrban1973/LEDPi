@@ -21,7 +21,7 @@ namespace LEDPiLib.Modules
         private float x = 320f;
         private float dx = 2.1f;
         private bool right = true;
-        private float y_ang = 0.0f;
+        private float y_ang;
 
         protected override bool completedRun()
         {
@@ -58,7 +58,7 @@ namespace LEDPiLib.Modules
 
             y_ang = (y_ang + 1.5f) % 360.0f;
 
-            float y = 350.0f - 200.0f * Convert.ToSingle(Math.Abs(Math.Cos(y_ang * Math.PI / 180.0)));
+            float y = 350.0f - 200.0f * (float) Math.Abs(Math.Cos(y_ang * Math.PI / 180.0));
             calc_and_draw(image, phase, 120.0f, x, y);
             image.Mutate(c => c.Resize(LEDWidth, LEDHeight));
 
@@ -66,25 +66,24 @@ namespace LEDPiLib.Modules
         }
 
 
-        private float get_lat(float phase, int i)
+        private float get_lat(float localPhase, int i)
         {
             if (i == 0)
                 return -90.0f;
             else if (i == 9)
                 return 90.0f;
             else
-                return -90.0f + phase + (i - 1) * 22.5f;
+                return -90.0f + localPhase + (i - 1) * 22.5f;
         }
 
-        private Dictionary<PointF, PointF> calc_points(float phase)
+        private Dictionary<PointF, PointF> calc_points(float localPhase)
         {
             Dictionary<PointF, PointF> points = new Dictionary<PointF, PointF>();
-            double sin_lat;
             
             for(int i =0; i <= 10; i++)
             {
-                float lat = get_lat(phase, i);
-                sin_lat = Math.Sin(lat * Math.PI / 180.0);
+                float lat = get_lat(localPhase, i);
+                double sin_lat = Math.Sin(lat * Math.PI / 180.0);
 
                 for (int j = 0; j <= 9; j++)
                 {
@@ -92,7 +91,7 @@ namespace LEDPiLib.Modules
                     double y = Math.Sin(lon * Math.PI / 180.0);
                     double l = Math.Cos(lon * Math.PI / 180.0);
 
-                    points.Add(new PointF(i, j), new PointF(Convert.ToSingle(sin_lat * l), Convert.ToSingle(y)));
+                    points.Add(new PointF(i, j), new PointF((float)(sin_lat * l), (float) y));
                 }
             }
 
@@ -107,8 +106,8 @@ namespace LEDPiLib.Modules
             foreach(PointF point in points.Keys.ToList())
             {
                 PointF otherPoint = points[point];
-                otherPoint.X = Convert.ToSingle(otherPoint.X * ct - otherPoint.Y * st);
-                otherPoint.Y = Convert.ToSingle(otherPoint.X * st + otherPoint.Y * ct);
+                otherPoint.X = (float)(otherPoint.X * ct - otherPoint.Y * st);
+                otherPoint.Y = (float)(otherPoint.X * st + otherPoint.Y * ct);
 
                 points[point] = otherPoint;
             }
@@ -120,8 +119,8 @@ namespace LEDPiLib.Modules
             foreach (PointF point in points.Keys.ToList())
             {
                 PointF otherPoint = points[point];
-                otherPoint.X = Convert.ToSingle(otherPoint.X * s + tx);
-                otherPoint.Y = Convert.ToSingle(otherPoint.Y * s + ty);
+                otherPoint.X = otherPoint.X * s + tx;
+                otherPoint.Y = otherPoint.Y * s + ty;
 
                 points[point] = otherPoint;
             }
@@ -133,44 +132,19 @@ namespace LEDPiLib.Modules
             scale_and_translate(points, s, tx, ty);
         }
 
-        private void draw_meridians(Image<Rgba32> image, Dictionary<PointF, PointF> points)
-        {
-            for (int i = 0; i <= 10; i++)
-            {
-                for (int j = 0; j <= 8; j++)
-                {
-                    PointF point1 = points[points.Keys.First(c => c.X == i && c.Y == j)];
-                    PointF point2 = points[points.Keys.First(c => c.X == i && c.Y == j + 1)];
-
-                    image.Mutate(c => c.DrawLines(Color.Black, 1, new[] { point1, point2 }));
-
-                }
-            }
-        }
-
-        private void draw_parabels(Image<Rgba32> image, Dictionary<PointF, PointF> points)
-        {
-            for (int i = 0; i <= 7; i++)
-            {
-                PointF point1 = points[points.Keys.First(c => c.X == 0 && c.Y == i + 1)];
-                PointF point2 = points[points.Keys.First(c => c.X == 9 && c.Y == i + 1)];
-
-                image.Mutate(c => c.DrawLines(Color.Black, 1, new[] { point1, point2 }));
-            }
-        }
-
         private void fill_tiles(Image<Rgba32> image, Dictionary<PointF, PointF> points, bool isRed)
         {
             for (int i = 0; i < 8; i++)
             {
                 for (int j = 0; j < 9; j++)
                 {
+                    bool localIsRed = isRed;
                     PointF point1 = points[points.Keys.First(c => c.X == i && c.Y == j)];
                     PointF point2 = points[points.Keys.First(c => c.X == i + 1 && c.Y == j)];
                     PointF point3 = points[points.Keys.First(c => c.X == i + 1 && c.Y == j + 1)];
                     PointF point4 = points[points.Keys.First(c => c.X == i && c.Y == j + 1)];
 
-                    image.Mutate(c => c.FillPolygon(isRed ? Color.Red : Color.White, new[] { point1, point2, point3, point4 }));
+                    image.Mutate(c => c.FillPolygon(localIsRed ? Color.Red : Color.White, new[] { point1, point2, point3, point4 }));
                     isRed = !isRed;
                 }
             }
@@ -211,23 +185,23 @@ namespace LEDPiLib.Modules
 
             for (int i = 0; i <= 16; i++)
             {
-                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i * 36, 432), new PointF(Convert.ToSingle(i * 42.666), 480) }));
+                image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(50 + i * 36, 432), new PointF(i * 42.666f, 480) }));
             }
 
             foreach(int y in _ys)
             {
-                float x1 = (Convert.ToSingle(50 - 50.0 * (y - 432) / (480.0 - 432.0)));
+                float x1 = (50 - 50.0f * (y - 432) / (480.0f - 432.0f));
                 image.Mutate(c => c.DrawLines(Color.Purple, 1, new[] { new PointF(x1, y), new PointF(640 - x1, y) }));
             }
         }
 
-        private void calc_and_draw(Image<Rgba32> image, float phase, float scale, float x, float y)
+        private void calc_and_draw(Image<Rgba32> image, float localPhase, float scale, float x, float y)
         {
-            Dictionary<PointF, PointF> points = calc_points(phase % 22.5f);
+            Dictionary<PointF, PointF> points = calc_points(localPhase % 22.5f);
             transform(points, scale, x, y);
             draw_shadow(image, points);
             draw_wireframe(image);
-            fill_tiles(image, points, phase >= 22.5f);
+            fill_tiles(image, points, localPhase >= 22.5f);
 
             //draw_meridians(image, points);
             //draw_parabels(image, points);

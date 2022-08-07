@@ -13,21 +13,13 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Birthday)]
     public class LEDBirthdayModule : ModuleBase
     {
-        private enum Direction
-        {
-            Left,
-            Right,
-            Up,
-            Down
-        }
+        private readonly List<Image<Rgba32>> _flames = new List<Image<Rgba32>>();
+        private readonly Image<Rgba32> _cake;
+        private readonly List<Image<Rgba32>> _numerals = new List<Image<Rgba32>>();
 
-        private List<Image<Rgba32>> _flames = new List<Image<Rgba32>>();
-        private Image<Rgba32> _cake;
-        private List<Image<Rgba32>> _numerals = new List<Image<Rgba32>>();
-
-        private int _internalCounter = 0;
-        private float candleLength = 5f;
-        private int _age = 0;
+        private int _internalCounter;
+        private const float candleLength = 5f;
+        private readonly int _age;
 
         public LEDBirthdayModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 30)
         {
@@ -57,11 +49,6 @@ namespace LEDPiLib.Modules
 
         }
 
-        protected override bool completedRun()
-        {
-            return base.completedRun();
-        }
-
         protected override Image<Rgba32> RunInternal()
         {
             
@@ -85,13 +72,13 @@ namespace LEDPiLib.Modules
                 if (_age >= 4)
                     drawCandle(image, 4f, yOffset1);
 
-                if (_age == 1 || _age >= 4)
+                if (_age == 1 || _age == 3 || _age == 5 || _age == 7 || _age == 9)
                     drawCandle(image, 0f, yOffset3);
 
                 if (_age == 2 || _age == 3 || _age >= 8)
                     drawCandle(image, 8f, yOffset3);
 
-                if (_age == 2 || _age == 3 || _age == 9)
+                if (_age == 2 || _age == 3 || _age == 8 || _age == 9)
                     drawCandle(image, -8f, yOffset3);
 
                 if (_age >= 6)

@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -28,14 +26,10 @@ namespace LEDPiLib.Modules
             public Func<double, double> f { get; set; }
             public List<Func<double, double, double, double, double>> m { get; set; }
 
-            public int a { get; set; }
-            public int b { get; set; }
-            public double n { get; set; }
-
             public double pt { get; set; }
         }
 
-        private static List<Func<double, double, double, double, double>> functions =
+        private static readonly List<Func<double, double, double, double, double>> functions =
             new List<Func<double, double, double, double, double>>()
             {
                 inner,
@@ -49,13 +43,12 @@ namespace LEDPiLib.Modules
                 sineInner
             };
 
-        private static List<double> sineTable = new List<double>();
-        private double t = 0;
-        private PlasmaParam param;
+        private static readonly List<double> sineTable = new List<double>();
+        private double t;
+        private readonly PlasmaParam param;
 
         public LEDPlasmaModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1f, 15)
         {
-            Random random = new Random();
             List<Func<double, double, double, double, double>> worklist =
                 new List<Func<double, double, double, double, double>>();
 
@@ -71,14 +64,12 @@ namespace LEDPiLib.Modules
 
             param = new PlasmaParam()
             {
-                pt = random.NextDouble() + random.Next(23), //23,// random.Next(23) * 5,
-                vx = random.NextDouble() * 8 - 4, //0.5,
-                vy = random.NextDouble() * 8 - 4, //0.35,
-                d = random.NextDouble() * 4 + 2, //5,
+                pt = MathHelper.GlobalRandom().NextDouble() + MathHelper.GlobalRandom().Next(23),
+                vx = MathHelper.GlobalRandom().NextDouble() * 8 - 4, //0.5,
+                vy = MathHelper.GlobalRandom().NextDouble() * 8 - 4, //0.35,
+                d = MathHelper.GlobalRandom().NextDouble() * 4 + 2, //5,
                 m = worklist,
                 f = sine,
-                a = 1,
-                b = 1,
                 x = 1,
                 y = 0,
                 p = 3
@@ -102,23 +93,24 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
-            for (int y = 0; y < renderHeight; y++)
+            image.ProcessPixelRows(accessor =>
             {
-                for(int x = 0; x < renderWidth; x++)
+                for (int y = 0; y < renderHeight; y++)
                 {
-                    Rgba32 pixel = image.GetPixelRowSpan(y)[x];
-                    double z = wave(x, y, param);
+                    var row = accessor.GetRowSpan(y);
+                    for (int x = 0; x < renderWidth; x++)
+                    {
+                        ref Rgba32 pixel = ref row[x];
+                        double z = wave(x, y, param);
 
-                    pixel.R = Convert.ToByte(z);
-                    pixel.G = 0;
-                    pixel.B = Convert.ToByte(z);
-
-                    image.GetPixelRowSpan(y)[x] = pixel;
+                        pixel.R = Convert.ToByte(z);
+                        pixel.G = 0;
+                        pixel.B = Convert.ToByte(z);
+                    }
                 }
-            }
+            });
 
             t += .20;
 

@@ -3,7 +3,6 @@ using SixLabors.ImageSharp;
 using LEDPiLib;
 using rpi_rgb_led_matrix_sharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System.IO;
 
 namespace LEDPiProcessor
@@ -13,7 +12,7 @@ namespace LEDPiProcessor
         private static readonly RGBLedMatrix matrix = new RGBLedMatrix(new RGBLedMatrixOptions { ChainLength = 1, Rows = LEDPIProcessorBase.LEDHeight, Cols = LEDPIProcessorBase.LEDWidth, HardwareMapping = "adafruit-hat-pwm" });
         private static RGBLedCanvas canvas;
 
-        public LEDPIProcessorKit() :base()
+        public LEDPIProcessorKit()
         {
             canvas = matrix.CreateOffscreenCanvas();
             BasePath = Path.Combine("/home/pi/LEDPi/Processor");
@@ -21,17 +20,20 @@ namespace LEDPiProcessor
 
         protected override void doProcess(Image<Rgba32> image)
         {
-            for (int y = 0; y < canvas.Height; y++)
+            image.ProcessPixelRows(accessor =>
             {
-                Span<Rgba32> rowSpan = image.GetPixelRowSpan(y);
-
-                for (int x = 0; x < canvas.Width; x++)
+                for (int y = 0; y < canvas.Height; y++)
                 {
-                    Rgba32 pixel = rowSpan[x];
+                    Span<Rgba32> rowSpan = accessor.GetRowSpan(y);
 
-                    canvas.SetPixel(x, y, new rpi_rgb_led_matrix_sharp.Color(pixel.R, pixel.G, pixel.B));
+                    for (int x = 0; x < canvas.Width; x++)
+                    {
+                        Rgba32 pixel = rowSpan[x];
+
+                        canvas.SetPixel(x, y, new rpi_rgb_led_matrix_sharp.Color(pixel.R, pixel.G, pixel.B));
+                    }
                 }
-            }
+            });
 
             canvas = matrix.SwapOnVsync(canvas);
         }

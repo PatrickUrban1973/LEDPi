@@ -11,12 +11,12 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.FireEffect)]
     public class LEDFireEffectModule : ModuleBase
     {
-        private Dictionary<int, Dictionary<int, float>> buffer1 = new Dictionary<int, Dictionary<int, float>>();
-        private Dictionary<int, Dictionary<int, float>> buffer2 = new Dictionary<int, Dictionary<int, float>>();
-        private Dictionary<int, Dictionary<int, float>> cooling = new Dictionary<int, Dictionary<int, float>>();
-        private float ystart = 0.0f;
+        private readonly Dictionary<int, Dictionary<int, float>> buffer1 = new Dictionary<int, Dictionary<int, float>>();
+        private readonly Dictionary<int, Dictionary<int, float>> buffer2 = new Dictionary<int, Dictionary<int, float>>();
+        private readonly Dictionary<int, Dictionary<int, float>> cooling = new Dictionary<int, Dictionary<int, float>>();
+        private float ystart;
         private readonly float randomZ;
-        private Perlin perlin = new Perlin();
+        private readonly Perlin perlin = new Perlin();
 
         public LEDFireEffectModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 1.5f)
         {
@@ -24,7 +24,7 @@ namespace LEDPiLib.Modules
             initDictionary(buffer2);
             initDictionary(cooling);
 
-            randomZ = Convert.ToSingle(new Random().NextDouble());
+            randomZ = (float)MathHelper.GlobalRandom().NextDouble();
         }
 
         protected override bool completedRun()
@@ -34,8 +34,7 @@ namespace LEDPiLib.Modules
 
         protected override Image<Rgba32> RunInternal()
         {
-            Image<Rgba32> image = new Image<Rgba32>(renderWidth, renderHeight);
-            SetBackgroundColor(image);
+            Image<Rgba32> image = GetNewImage();
 
             fire(5);
             cool();
@@ -62,16 +61,19 @@ namespace LEDPiLib.Modules
                 }
             }
 
-            for (int y = 0; y < renderHeight; y++)
+            image.ProcessPixelRows(accessor =>
             {
-                var row = image.GetPixelRowSpan(y);
-
-                for (int x = 0; x < renderWidth; x++)
+                for (int y = 0; y < renderHeight; y++)
                 {
-                    row[x] = fire_gradient(buffer2[y][x]);
-                    buffer1[y][x] = buffer2[y][x];
+                    var row = accessor.GetRowSpan(y);
+
+                    for (int x = 0; x < renderWidth; x++)
+                    {
+                        row[x] = fire_gradient(buffer2[y][x]);
+                        buffer1[y][x] = buffer2[y][x];
+                    }
                 }
-            }
+            });
 
             return image;
         }
@@ -105,9 +107,6 @@ namespace LEDPiLib.Modules
 
                     // Calculate noise and scale by 255
                     float bright = perlin.perlin(xoff, yoff, randomZ) * 15f;
-
-                    // Try using this line instead
-                    //float bright = random(0,255);
 
                     // Set each pixel onscreen to a grayscale value
                     cooling[y][x]=bright;

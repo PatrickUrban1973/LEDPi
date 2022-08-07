@@ -7,9 +7,9 @@ using System.Text;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
 using LEDPiLib.Modules.Model;
+using LEDPiLib.Modules.Model.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -17,14 +17,15 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.Cube)]
     public class LEDCubeModule : LEDEngine3DModuleBase
     {
-        public enum Axis
+        [Flags]
+        private enum Axis
         {
             X = 1,
             Y = 2,
             Z = 4,
         }
 
-        public class Model3DConfiguration
+        private class Model3DConfiguration
         {
             public Model3DConfiguration(string fileName, Vector3D camera, Vector3D lookDir, Vector3D up, Vector3D target, Axis axis)
             {
@@ -50,24 +51,34 @@ namespace LEDPiLib.Modules
             new Model3DConfiguration("teapot.obj", new Vector3D(0f, 0f, 0.5f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 1), new Vector3D(0, .0f, 1), Axis.X|Axis.Y),
             new Model3DConfiguration("axis.obj", new Vector3D(0f, 0f, -7f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), Axis.X|Axis.Y|Axis.Z),
             new Model3DConfiguration("VideoShip.obj", new Vector3D(0f, 0f, -3f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 1), new Vector3D(0, 0, 1), Axis.X|Axis.Y|Axis.Z),
-            new Model3DConfiguration("cube.obj", new Vector3D(0f, 0f, 3.5f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), Axis.X|Axis.Y|Axis.Z)
+            new Model3DConfiguration("cube.obj", new Vector3D(0f, 0f, 2.5f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), Axis.X|Axis.Y|Axis.Z),
+            new Model3DConfiguration("triangle.obj", new Vector3D(0f, 0f, 4.0f), new Vector3D(0f,0f,0f), new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), Axis.X|Axis.Y|Axis.Z)
         };
 
-        Mesh meshCube = new Mesh();
-        Mat4x4 matProj; // Matrix that converts from view space to screen space
-        Vector3D vCamera;
-        Vector3D vLookDir;
-        Vector3D light_direction = new Vector3D(0.0f, 1.0f, -1.0f);
+        private readonly Mesh meshCube;
+        private readonly Mat4x4 matProj; // Matrix that converts from view space to screen space
+        private readonly Vector3D vCamera;
+        private Vector3D vLookDir;
+        private readonly Vector3D light_direction = new Vector3D(0.0f, 1.0f, -1.0f);
         float fYaw = 0f;     // FPS Camera rotation in XZ plane
         float fTheta;   // Spins World transform
-        private float fElapsedTime = 0f;
+        private float fElapsedTime;
         private readonly Model3DConfiguration model3DConfiguration;
 
-        Stopwatch stopwatch = new Stopwatch();
+        private readonly Stopwatch stopwatch = new Stopwatch();
 
         public LEDCubeModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 3f)
         {
-            int index = new Random().Next(0, configurations.Count - 1);
+            int index;
+
+            if (String.IsNullOrEmpty(moduleConfiguration.Parameter))
+            {
+                index = MathHelper.GlobalRandom().Next(0, configurations.Count);
+            }
+            else
+            {
+                index = Convert.ToInt32(moduleConfiguration.Parameter);
+            }
 
             model3DConfiguration = configurations[index];
 
@@ -75,11 +86,11 @@ namespace LEDPiLib.Modules
             vLookDir = model3DConfiguration.LookDir;
 
             meshCube.Tris = readObjFile(model3DConfiguration.FileName);
-            matProj = Mat4x4.MakeProjection(90.0f, (float)renderHeight / (float)renderWidth, 0.1f, 1000f);
+            matProj = Mat4x4.MakeProjection(90.0f, renderHeight / (float)renderWidth, 0.1f, 1000f);
 
         }
 
-        private List<Triangle> readObjFile(string fileName)
+        private static List<Triangle> readObjFile(string fileName)
         {
             try
             {
@@ -134,16 +145,15 @@ namespace LEDPiLib.Modules
         {
             fElapsedTime = stopwatch.ElapsedMilliseconds / 1000f;
             stopwatch.Restart();
-            image = new Image<Rgba32>(renderWidth, renderHeight);
+            image = GetNewImage();
             engine3D.Canvas = image;
 
-            // Set up "World Tranmsform" though not updating theta 
+            // Set up "World Transform" though not updating theta 
             // makes this a bit redundant
-            Mat4x4 matRotZ, matRotX, matRotY;
 			fTheta += 1.0f * fElapsedTime; // Uncomment to spin me right round baby right round
-			matRotZ = Mat4x4.MakeRotationZ(fTheta * 0.5f);
-			matRotX = Mat4x4.MakeRotationX(fTheta);
-            matRotY = Mat4x4.MakeRotationY(fTheta);
+            Mat4x4 matRotZ = Mat4x4.MakeRotationZ(fTheta * 0.5f);
+            Mat4x4 matRotX = Mat4x4.MakeRotationX(fTheta);
+            Mat4x4 matRotY = Mat4x4.MakeRotationY(fTheta);
 
             Mat4x4 matTrans = Mat4x4.MakeTranslation(0.0f, 0.0f, 5.0f);
 
@@ -185,8 +195,8 @@ namespace LEDPiLib.Modules
             // Make view matrix from camera
             Mat4x4 matView = matCamera.QuickInverse();
 
-            // Store triagles for rastering later
-            drawTriangles(meshCube, matWorld, matView, matProj, vCamera, light_direction, false, true);
+            // Store triangles for rastering later
+            drawTriangles(meshCube, matWorld, matView, matProj, vCamera, light_direction, false);
 
             return image;
         }

@@ -9,7 +9,7 @@
       "SubConfigurations": [
         {
           "Module": 15,
-          "Parameter": 30,
+          "Parameter": "2022-01-01 00:00:00",
           "OneTime": true,
           "Duration": 0,
           "CronTime": null,
@@ -24,7 +24,7 @@
           "SubConfigurations": [
             {
               "Module": 4,
-              "Parameter": "Happy new year!!!",
+              "Parameter": "Frohes neues Jahr!!!",
               "OneTime": false,
               "Duration": 0,
               "CronTime": null,

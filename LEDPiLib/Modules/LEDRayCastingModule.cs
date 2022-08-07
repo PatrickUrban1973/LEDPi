@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LEDPiLib.DataItems;
 using LEDPiLib.Modules.Helper;
-using LEDPiLib.Modules.Model;
 using LEDPiLib.Modules.Model.RayCasting;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.Modules
@@ -14,28 +11,28 @@ namespace LEDPiLib.Modules
     [LEDModule(LEDModules.RayCasting)]
     public class LEDRayCastingModule : ModuleBase
     {
-        private LEDEngine3D engine3D = new LEDEngine3D();
-        private Image<Rgba32> backgroundImage;
+        private readonly LEDEngine3D engine3D = new LEDEngine3D();
+        private readonly Image<Rgba32> backgroundImage;
 
-        private List<Boundary> walls = new List<Boundary>();
-        private Starter starter;
-        private float xoff = 0;
+        private readonly List<Boundary> walls = new List<Boundary>();
+        private readonly Starter starter;
+        private float xoff;
         private float yoff = 10000;
-        private int countWalls = 5;
+        private const int countWalls = 5;
 
+        private readonly Perlin perlin = new Perlin();
+        
         public LEDRayCastingModule(ModuleConfiguration moduleConfiguration) : base(moduleConfiguration, 5f, 15)
         {
-            backgroundImage = new Image<Rgba32>(renderHeight, renderWidth);
-            SetBackgroundColor(backgroundImage);
+            backgroundImage = GetNewImage();
             engine3D.Canvas = backgroundImage;
-            Random random = new Random();
 
             for (int i = 0; i < countWalls; i++)
             {
-                float x1 = random.Next(renderWidth);
-                float x2 = random.Next(renderWidth);
-                float y1 = random.Next(renderHeight);
-                float y2 = random.Next(renderHeight);
+                float x1 = MathHelper.GlobalRandom().Next(renderWidth);
+                float x2 = MathHelper.GlobalRandom().Next(renderWidth);
+                float y1 = MathHelper.GlobalRandom().Next(renderHeight);
+                float y2 = MathHelper.GlobalRandom().Next(renderHeight);
                 walls.Add(new Boundary(x1, y1, x2, y2));
             }
 
@@ -56,8 +53,6 @@ namespace LEDPiLib.Modules
         {
             return false;
         }
-
-        private Perlin perlin = new Perlin();
 
         protected override Image<Rgba32> RunInternal()
         {

@@ -1,0 +1,22 @@
+{
+  "ModuleConfigurations": [
+    {
+      "Module": 36,
+      "Parameter": "3",
+      "OneTime": false,
+      "Duration": 0,
+      "CronTime": null,
+      "SubConfigurations": [
+        {
+          "Module": 4,
+          "Parameter": "Frohe Weihnachten!!!; 0; 008000FF",
+          "OneTime": false,
+          "Duration": 0,
+          "CronTime": null,
+          "SubConfigurations": null
+        }
+      ]
+    }
+  ],
+  "Loop": false
+}

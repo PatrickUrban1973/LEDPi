@@ -1,24 +1,22 @@
 ﻿using LEDPiLib.Modules.Helper;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
-namespace LEDPiLib.Modules.Model
+namespace LEDPiLib.Modules.Model.Firework
 {
     public class Firework
     {
-        List<Particle> particles;    // An arraylist for all the particles
-        Particle firework;
-        Vector3D hu;
+        private readonly List<Particle> particles;    // An arraylist for all the particles
+        private Particle firework;
+        private readonly Vector3 hu;
 
-        private Random random = new Random();
-
-        public static Vector2D Gravity { get; set; }
+        public static Vector2 Gravity { get; set; }
 
         public Firework(int width, int height)
         {
-            hu = new Vector3D(random.Next(255), random.Next(255), random.Next(255));
-            firework = new Particle(random.Next(width), height, hu);
+            hu = new Vector3(MathHelper.GlobalRandom().Next(255), MathHelper.GlobalRandom().Next(255), MathHelper.GlobalRandom().Next(255));
+            firework = new Particle(MathHelper.GlobalRandom().Next(width), height, hu);
             particles = new List<Particle>();   // Initialize the arraylist
         }
 

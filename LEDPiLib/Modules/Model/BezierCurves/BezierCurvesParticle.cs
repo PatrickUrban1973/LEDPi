@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using LEDPiLib.Modules.Helper;
 
 namespace LEDPiLib.Modules.Model.BezierCurves
 {
@@ -10,18 +8,18 @@ namespace LEDPiLib.Modules.Model.BezierCurves
         private float dy;
 
 
-        public float X { get; set; }
-        public float Y { get; set; }
+        public float X { get; private set; }
+        public float Y { get; private set; }
 
-        public static float RenderWidth { get; set; } = 0;
-        public static float RenderHeight { get; set; } = 0;
+        public static float RenderWidth { get; set; }
+        public static float RenderHeight { get; set; }
 
         public BezierCurvesParticle(float x, float y)
         {
             X = x;
             Y = y;
-            dx = new Random().Next(-8, 8);
-            dy = new Random().Next(-8, 8);
+            dx = MathHelper.GlobalRandom().Next(-8, 9);
+            dy = MathHelper.GlobalRandom().Next(-8, 9);
         }
 
         public void Update()

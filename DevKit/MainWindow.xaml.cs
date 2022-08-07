@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using LEDPiDevKit;
 using LEDPiLib;
 using LEDPiLib.DataItems;
 using Newtonsoft.Json;
@@ -21,7 +20,6 @@ namespace DevKit
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly Image<Rgba32> _canvas;
         private readonly LEDPIProcessorDevKit kit;
 
         private ModulePlaylist _playlist = new ModulePlaylist()
@@ -39,10 +37,10 @@ namespace DevKit
         {
             InitializeComponent();
 
-            _canvas = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
-            kit = new LEDPIProcessorDevKit(_canvas);
-            ComboBox.ItemsSource = Enum.GetValues(typeof(LEDPIProcessorBase.LEDModules)).Cast<LEDPIProcessorBase.LEDModules>();
-            ComboBox.SelectedItem = LEDPIProcessorBase.LEDModules.None;
+            Image<Rgba32> canvas = new Image<Rgba32>(LEDPIProcessorBase.LEDWidth, LEDPIProcessorBase.LEDHeight);
+            kit = new LEDPIProcessorDevKit(canvas);
+            ComboBox.ItemsSource = Enum.GetValues(typeof(LEDPIProcessorBase.LEDModules)).Cast<LEDPIProcessorBase.LEDModules>().Where(c => c >= 0).OrderBy(b => b.ToString());
+            ComboBox.SelectedIndex = 0;
             PlaylistGrid.ItemsSource = _playlist.ModuleConfigurations;
             Loop.IsChecked = _playlist.Loop;
 
@@ -50,44 +48,38 @@ namespace DevKit
             {
                 while (true)
                 {
-                    Thread.Sleep(new TimeSpan(0, 0, 0, 0, 10));
+                    Thread.Sleep(10);
 
-                    lock (_canvas)
+                    lock (canvas)
                     {
                         BitmapImage bmp;
 
-                        try
+                        using (var memoryStream = new MemoryStream())
                         {
-                            using (var memoryStream = new MemoryStream())
+                            canvas.Save(memoryStream, new PngEncoder());
+
+                            memoryStream.Seek(0, SeekOrigin.Begin);
+
+                            bmp = new BitmapImage();
+                            bmp.BeginInit();
+                            bmp.StreamSource = memoryStream;
+                            bmp.CacheOption = BitmapCacheOption.OnLoad;
+                            bmp.EndInit();
+                            bmp.Freeze();
+                        }
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            try
                             {
-                                _canvas.Save(memoryStream, new PngEncoder());
-
-                                memoryStream.Seek(0, SeekOrigin.Begin);
-
-                                bmp = new BitmapImage();
-                                bmp.BeginInit();
-                                bmp.StreamSource = memoryStream;
-                                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                                bmp.EndInit();
-                                bmp.Freeze();
+                                LEDImage.Source = bmp;
+                                LEDImageOriginal.Source = bmp;
                             }
-
-                            Dispatcher.Invoke(() =>
+                            catch (Exception e)
                             {
-                                try
-                                {
-                                    LEDImage.Source = bmp;
-                                    LEDImageOriginal.Source = bmp;
-                                }
-                                catch (Exception e)
-                                {
-                                }
-                            });
-
-                        }
-                        finally
-                        {
-                        }
+                                Console.WriteLine(e);
+                            }
+                        });
                     }
                 }
             });
@@ -110,13 +102,13 @@ namespace DevKit
                 {
                     new ModuleConfiguration()
                     {
-                        Duration = 0, Module = (LEDPIProcessorBase.LEDModules) ComboBox.SelectedItem,
-                        Parameter = parameterText, OneTime = Onetime.IsChecked.Value
+                        Duration = String.IsNullOrEmpty(Duration.Text) ? 0 : Convert.ToInt32(Duration.Text), Module = (LEDPIProcessorBase.LEDModules) ComboBox.SelectedItem,
+                        Parameter = parameterText, OneTime = Onetime.IsChecked != null && Onetime.IsChecked.Value
                     },
                 }
             };
 
-            kit.RunModule(playlist, false,ShowFrameRate.IsChecked.Value);
+            kit.RunModule(playlist, false,ShowFrameRate.IsChecked != null && ShowFrameRate.IsChecked.Value);
         }
 
         private void ExportButton_OnClick(object sender, RoutedEventArgs e)
@@ -127,13 +119,16 @@ namespace DevKit
         private void ImportButton_OnClick(object sender, RoutedEventArgs e)
         {
             _playlist = JsonConvert.DeserializeObject<ModulePlaylist>(JSON.Text);
-            PlaylistGrid.ItemsSource = _playlist.ModuleConfigurations;
-            Loop.IsChecked = _playlist.Loop;
+            if (_playlist != null)
+            {
+                PlaylistGrid.ItemsSource = _playlist.ModuleConfigurations;
+                Loop.IsChecked = _playlist.Loop;
+            }
         }
 
         private void Loop_OnClick(object sender, RoutedEventArgs e)
         {
-            _playlist.Loop = Loop.IsChecked.Value;
+            if (Loop.IsChecked != null) _playlist.Loop = Loop.IsChecked.Value;
         }
 
         private void RunScript_OnClick(object sender, RoutedEventArgs e)
@@ -143,9 +138,7 @@ namespace DevKit
 
         private void UpInPlaylist_OnClick(object sender, RoutedEventArgs e)
         {
-            ModuleConfiguration selectedConfiguration = PlaylistGrid.SelectedItem as ModuleConfiguration;
-
-            if (selectedConfiguration != null)
+            if (PlaylistGrid.SelectedItem is ModuleConfiguration selectedConfiguration)
             {
                 int currentIndex = _playlist.ModuleConfigurations.IndexOf(selectedConfiguration);
                 
@@ -158,9 +151,7 @@ namespace DevKit
 
         private void DownInPlaylist_OnClick(object sender, RoutedEventArgs e)
         {
-            ModuleConfiguration selectedConfiguration = PlaylistGrid.SelectedItem as ModuleConfiguration;
-
-            if (selectedConfiguration != null)
+            if (PlaylistGrid.SelectedItem is ModuleConfiguration selectedConfiguration)
             {
                 int currentIndex = _playlist.ModuleConfigurations.IndexOf(selectedConfiguration);
 
@@ -173,9 +164,7 @@ namespace DevKit
 
         private void DeleteInPlaylist_OnClick(object sender, RoutedEventArgs e)
         {
-            ModuleConfiguration selectedConfiguration = PlaylistGrid.SelectedItem as ModuleConfiguration;
-
-            if (selectedConfiguration != null)
+            if (PlaylistGrid.SelectedItem is ModuleConfiguration selectedConfiguration)
                 _playlist.ModuleConfigurations.Remove(selectedConfiguration);
         }
     }

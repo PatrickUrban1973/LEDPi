@@ -3,9 +3,9 @@ using static LEDPiLib.LEDPIProcessorBase;
 
 namespace LEDPiLib.DataItems
 {
-    class LEDModuleAttribute : Attribute
+    internal class LEDModuleAttribute : Attribute
     {
-        private LEDModules _lEDModule;
+        private readonly LEDModules _lEDModule;
 
         public LEDModuleAttribute(LEDModules lEDModule)
         {

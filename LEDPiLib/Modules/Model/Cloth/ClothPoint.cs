@@ -14,8 +14,8 @@ namespace LEDPiLib.Modules.Model.Cloth
         private static float width;
         private static float height;
 
-        public float OldX { get; set; }
-        public float OldY { get; set; }
+        private float OldX { get; set; }
+        private float OldY { get; set; }
 
         public static void InitPoints(float f, float g, float b, float w, float h)
         {
